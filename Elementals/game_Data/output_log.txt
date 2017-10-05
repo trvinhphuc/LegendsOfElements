@@ -1,0 +1,53 @@
+Initialize engine version: 5.5.0f3 (38b4efef76f0)
+GfxDevice: creating device client; threaded=1
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.0]
+    Renderer: Intel(R) HD Graphics Family (ID=0xa16)
+    Vendor:   Intel
+    VRAM:     880 MB
+    Driver:   9.18.10.3272
+Begin MonoManager ReloadAssembly
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.dll (this message is harmless)
+Loading C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.dll into Unity Child Domain
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\Assembly-CSharp.dll (this message is harmless)
+Loading C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.UI.dll (this message is harmless)
+Loading C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
+Loading C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.PlaymodeTestsRunner.dll (this message is harmless)
+Loading C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\UnityEngine.PlaymodeTestsRunner.dll into Unity Child Domain
+- Completed reload, in  0.083 seconds
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\System.Core.dll (this message is harmless)
+Platform assembly: C:\Users\phucloc\Documents\Unity\Elementals\game_Data\Managed\System.dll (this message is harmless)
+desktop: 1366x768 60Hz; virtual: 1366x768 at 0,0
+<RI> Initializing input.
+<RI> Input initialized.
+<RI> Initialized touch support.
+UnloadTime: 3.876585 ms
+Unloading 5 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 9.025837 ms
+
+Unloading 12 unused Assets to reduce memory usage. Loaded Objects now: 327.
+Total: 0.545672 ms (FindLiveObjects: 0.052600 ms CreateObjectMapping: 0.057731 ms MarkObjects: 0.407116 ms  DeleteObjects: 0.027369 ms)
+
+ArgumentOutOfRangeException: Argument is out of range.
+Parameter name: index
+  at System.Collections.Generic.List`1[UnityEngine.GameObject].get_Item (Int32 index) [0x00000] in <filename unknown>:0 
+  at GameManager.CreatePiece (System.String _pieceName, Single _posX, Single _posY, Int32 _playerTag) [0x00000] in <filename unknown>:0 
+  at GameManager.createAllPieces () [0x00000] in <filename unknown>:0 
+  at GameManager.Start () [0x00000] in <filename unknown>:0 
+ 
+(Filename:  Line: -1)
+
+ArgumentOutOfRangeException: Argument is out of range.
+Parameter name: index
+  at System.Collections.Generic.List`1[UnityEngine.GameObject].get_Item (Int32 index) [0x00000] in <filename unknown>:0 
+  at GameManager.CreatePiece (System.String _pieceName, Single _posX, Single _posY, Int32 _playerTag) [0x00000] in <filename unknown>:0 
+  at GameManager.createAllPieces () [0x00000] in <filename unknown>:0 
+  at GameManager.Start () [0x00000] in <filename unknown>:0 
+ 
+(Filename:  Line: -1)
+
+Setting up 1 worker threads for Enlighten.
+  Thread -> id: 2b84 -> priority: 1 
