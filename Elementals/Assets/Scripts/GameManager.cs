@@ -39,7 +39,9 @@ public class GameManager : MonoBehaviour {
 	public Vector2 Top = Vector2.up * 5.25f;
 	
 	List<Vector2> around = new List<Vector2>(); // list of around a piece
-	
+
+	public bool hop = false;
+
 	void OnGUI()
 	{
 		string _activePlayerColor;
@@ -56,7 +58,7 @@ public class GameManager : MonoBehaviour {
 	void Start()
 	{
 		createAllPieces ();
-
+		DrawBoard ();
 
 	}
 	void createAllPieces(){
@@ -98,12 +100,13 @@ public class GameManager : MonoBehaviour {
 		CreatePiece( "Earth" , -2.1f , 2.8f  , -1);		//26
 		CreatePiece( "Wind" , -1.05f , 2.45f , -1);		//27
 
-		//CreateBoard();
+		CreateBoard();
 	
 	}
 
 	void Update()
 	{
+		/*
 		GameObject[] deboardList = GameObject.FindGameObjectsWithTag ("board");
 
 
@@ -126,7 +129,7 @@ public class GameManager : MonoBehaviour {
 				winText.text = "Player 2 Win";
 			}
 		}
-
+		*/
 
 	}
 	void UpdateSelection()
@@ -279,52 +282,19 @@ public class GameManager : MonoBehaviour {
 			GetAroundPieces (_SelectedPiece);
 			for (int i = 0; i <= 7; i++) {
 				if (TestMovement (_SelectedPiece, around [i])) {
+					
 					clone = Object.Instantiate (_SelectedPiece, around [i], Quaternion.identity) as GameObject;
 					clone.tag = "clone";
 					clone.GetComponent<Renderer>().material.color = new Color (1f,1f,1f,0.5f);
-					Debug.Log(i+'a');
+
 				}
-				//Debug.Log(i);
-				/*
-				else if(TestMovement (_SelectedPiece, around [i+8])){
-					clone = Object.Instantiate (_SelectedPiece, around [i], Quaternion.identity) as GameObject;
+				else if(TestMovement(_SelectedPiece, around [i+8])){
+					hop = true;
+					clone = Object.Instantiate (_SelectedPiece, around [i+8], Quaternion.identity) as GameObject;
 					clone.tag = "clone";
 					clone.GetComponent<Renderer>().material.color = new Color (1f,1f,1f,0.5f);
 				}
-				/*
-				if (_SelectedPiece.tag == 1){
-					for( int j= 0; j<=13 ; j++){
-						if ((Mathf.Abs (around [i].x - activePiece [j].gameObject.transform.position.x) <= 0.01)
-						   && (Mathf.Abs (around [i].y - activePiece [j].gameObject.transform.position.y) <= 0.01)
-						   && activePiece [j].tag == 1) {
-							switch (i) {
-								case 0:
-								if(around[i].y + 0.7f)
-								case 1:
 
-								case 2:
-
-								case 3:
-
-								case 4:
-
-								case 5:
-
-								case 6:
-
-								case 7:
-								
-							}
-						}
-
-					}
-				}
-				if (_SelectedPiece.tag == -1){
-					for( int j= 14; j<=27 ; j++){
-						
-					}
-				}
-				*/
 			}
 			
 		
@@ -382,14 +352,16 @@ public class GameManager : MonoBehaviour {
 		if(validMovementBool)
 		{
 			
-
 			SelectedPiece.transform.position = new Vector2(_coordToMove.x , _coordToMove.y);		// Move the piece
 			EatPiece(SelectedPiece,activePlayer);
 			SelectedPiece.GetComponent<Renderer>().material.color = Color.white;	// Change it's color back
 			SelectedPiece = null;									// Unselect the Piece
 			ChangeState(0);
 			DecloneMove ();
-			activePlayer = -activePlayer;
+			if(hop == false) 
+				activePlayer = -activePlayer;
+			if (hop == true)
+				hop = false;
 		}
 	}
 	// Get list pieces around selected piece
@@ -542,18 +514,11 @@ public class GameManager : MonoBehaviour {
 		Vector2 _coordPiece = new Vector2(_SelectedPiece.transform.position.x, _SelectedPiece.transform.position.y);
 
 
-		/*
-		float dis = Vector2.Distance(_coordToMove,_coordPiece);
-		//Debug.Log (dis);
-		if(dis <= 0.71f){
-					//Debug.Log ("move");
-					_movementLegalBool = true;
+		if (_coordToMove.magnitude > 4.3) {
+			_movementLegalBool = false;
 		}
-		else  _movementLegalBool = false;
-		*/
+		//Debug.Log (gameState);
 
-
-		//// fix bug *************************************
 		for (int a=0 ; a<=27 ; a++){
 			if((Mathf.Abs(activePiece[a].gameObject.transform.position.x - _coordToMove.x) <= 0.1) &&  (Mathf.Abs(activePiece[a].gameObject.transform.position.y - _coordToMove.y) <= 0.1)){
 					_movementLegalBool = false;
