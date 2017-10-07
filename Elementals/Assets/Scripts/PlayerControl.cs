@@ -81,14 +81,14 @@ public class PlayerControl : MonoBehaviour {
 				if(Physics.Raycast (_ray,out _hitInfo))
 				{
 					
-					print (_hitInfo.collider.gameObject.tag);
+					//print (_hitInfo.collider.gameObject.tag);
 					// If the ray hit a cube, move. If it hit a piece of the other player, eat it.
-					if(_hitInfo.collider.gameObject.tag == ("clone"))
-					{
+					if(_hitInfo.collider.gameObject.tag.Contains("clone"))
+					{   /*
 						selectedCoord = new Vector2(_hitInfo.collider.gameObject.transform.position.x,_hitInfo.collider.gameObject.transform.position.y);
-					
-						//print (selectedCoord+"aaa");
 						_GameManager.MovePiece(selectedCoord);
+						*/
+						_GameManager.MovePiece(_hitInfo.collider.gameObject);
 					}
 					else if(_hitInfo.collider.gameObject.tag == ((-1*_activePlayer).ToString()))
 					{

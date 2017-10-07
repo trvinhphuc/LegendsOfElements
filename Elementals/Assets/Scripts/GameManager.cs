@@ -39,7 +39,7 @@ public class GameManager : MonoBehaviour {
 	public Vector2 Top = Vector2.up * 5.25f;
 	
 	List<Vector2> around = new List<Vector2>(); // list of around a piece
-
+	List<Vector2> passedTrack = new List<Vector2>();
 	public bool hop = false;
 
 	void OnGUI()
@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviour {
 		CreatePiece( "Earth" , -2.1f , 2.8f  , -1);		//26
 		CreatePiece( "Wind" , -1.05f , 2.45f , -1);		//27
 
-		CreateBoard();
+		//CreateBoard();
 	
 	}
 
@@ -279,31 +279,49 @@ public class GameManager : MonoBehaviour {
 	public void PossibleMove(GameObject _SelectedPiece){
 		GameObject clone;
 		if(_SelectedPiece != null){
-			GetAroundPieces (_SelectedPiece);
-			for (int i = 0; i <= 7; i++) {
-				if (TestMovement (_SelectedPiece, around [i])) {
+			if (hop) {
+				GetAroundPieces (_SelectedPiece);
+				for (int i = 0; i <= 7; i++) {
+					if (!TestMovement (_SelectedPiece, around [i])) {
+						if (TestMovement (_SelectedPiece, around [i + 8])) {
+							if(!passedTrack.Contains(around[i+8])){
+								
+							clone = Object.Instantiate (_SelectedPiece, around [i + 8], Quaternion.identity) as GameObject;
+							clone.tag = "cloneH";
+							clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
+							}
+						}
+					}
+				}
+			} else {
+				GetAroundPieces (_SelectedPiece);
+				for (int i = 0; i <= 7; i++) {
+					if (TestMovement (_SelectedPiece, around [i])) {
 					
-					clone = Object.Instantiate (_SelectedPiece, around [i], Quaternion.identity) as GameObject;
-					clone.tag = "clone";
-					clone.GetComponent<Renderer>().material.color = new Color (1f,1f,1f,0.5f);
+						clone = Object.Instantiate (_SelectedPiece, around [i], Quaternion.identity) as GameObject;
+						clone.tag = "clone";
+						clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
+
+					} else if (TestMovement (_SelectedPiece, around [i + 8])) {
+						clone = Object.Instantiate (_SelectedPiece, around [i + 8], Quaternion.identity) as GameObject;
+						clone.tag = "cloneH";
+						clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
+					}
 
 				}
-				else if(TestMovement(_SelectedPiece, around [i+8])){
-					hop = true;
-					clone = Object.Instantiate (_SelectedPiece, around [i+8], Quaternion.identity) as GameObject;
-					clone.tag = "clone";
-					clone.GetComponent<Renderer>().material.color = new Color (1f,1f,1f,0.5f);
-				}
-
 			}
-			
+
 		
 		}		
 	}
 	public void DecloneMove(){
 		GameObject[] decloneList = GameObject.FindGameObjectsWithTag ("clone");
-		foreach( GameObject declone in decloneList){
-			Destroy (declone);
+		foreach( GameObject declone1 in decloneList){
+			Destroy (declone1);
+		}
+		GameObject[] decloneListS = GameObject.FindGameObjectsWithTag ("cloneH");
+		foreach( GameObject declone2 in decloneListS){
+			Destroy (declone2);
 		}
 	}
 
@@ -338,30 +356,35 @@ public class GameManager : MonoBehaviour {
 	}
 	
 	// Move the SelectedPiece to the inputted coords
-	public void MovePiece(Vector2 _coordToMove)
+	public void MovePiece(GameObject _objMove)
 	{
-		bool validMovementBool = false;
+		
 		Vector2 _coordPiece = new Vector2(SelectedPiece.transform.position.x, SelectedPiece.transform.position.y);
+		Vector2 _coordToMove = new Vector2(_objMove.transform.position.x, _objMove.transform.position.y);
 		//Debug.Log (_coordPiece);
 		// Don't move if the user clicked on its own cube or if there is a piece on the cube
 		if((_coordToMove.x != _coordPiece.x || _coordToMove.y != _coordPiece.y) )
-		{
-			validMovementBool	= TestMovement (SelectedPiece, _coordToMove);
-		}
-		
-		if(validMovementBool)
-		{
-			
-			SelectedPiece.transform.position = new Vector2(_coordToMove.x , _coordToMove.y);		// Move the piece
-			EatPiece(SelectedPiece,activePlayer);
-			SelectedPiece.GetComponent<Renderer>().material.color = Color.white;	// Change it's color back
-			SelectedPiece = null;									// Unselect the Piece
-			ChangeState(0);
-			DecloneMove ();
-			if(hop == false) 
+		{	
+			if (_objMove.tag == "clone") {
+				SelectedPiece.transform.position = new Vector2 (_coordToMove.x, _coordToMove.y);		// Move the piece
+				EatPiece (SelectedPiece, activePlayer);
+				SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;	// Change it's color back
+				SelectedPiece = null;									// Unselect the Piece
+				ChangeState (0);
+				DecloneMove ();
 				activePlayer = -activePlayer;
-			if (hop == true)
-				hop = false;
+			} else {
+				hop = true;
+				SelectedPiece.transform.position = new Vector2 (_coordToMove.x, _coordToMove.y);		// Move the piece
+				EatPiece (SelectedPiece, activePlayer);
+				passedTrack.Add (_coordToMove);
+				DecloneMove ();
+				PossibleMove(SelectedPiece);
+				GameObject[] decloneListS = GameObject.FindGameObjectsWithTag ("cloneH");
+				if (decloneListS.Length == 0)
+					activePlayer = -activePlayer;
+			}
+
 		}
 	}
 	// Get list pieces around selected piece
