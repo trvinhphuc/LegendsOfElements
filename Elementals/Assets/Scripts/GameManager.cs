@@ -279,11 +279,14 @@ public class GameManager : MonoBehaviour
 
 		if (_SelectedPiece != null) {
 			if (hop) {
-
+				for (int a = 0; a < passedTrack.Count; a++) {
+					print (passedTrack[a]);
+				}
 				GetAroundPieces (_SelectedPiece);
 				for (int i = 0; i <= 7; i++) {
 					if (!TestMovement (_SelectedPiece, around [i])) {
 						if (TestMovement (_SelectedPiece, around [i + 8])) {
+							
 							if (!passedTrack.Contains (around [i + 8])) {
 								clone = Object.Instantiate (_SelectedPiece, around [i + 8], Quaternion.identity) as GameObject;
 								clone.tag = "cloneH";
@@ -338,9 +341,6 @@ public class GameManager : MonoBehaviour
 			ChangeState (0);
 			DecloneMove ();
 			if (hop) {
-				SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;
-				SelectedPiece = null;
-				ChangeState (0);
 				DecloneMove ();
 				hop = false;
 				passedTrack.Clear ();
@@ -385,12 +385,22 @@ public class GameManager : MonoBehaviour
 				passedTrack.Add (_coordPiece);
 				DecloneMove ();
 				PossibleMove (SelectedPiece);
-				GameObject[] decloneListS = GameObject.FindGameObjectsWithTag ("cloneH");
-				if (decloneListS.Length == 0) {
-					hop = false;
-					passedTrack.Clear ();
-					SelectedPiece = null;
-					activePlayer = -activePlayer;
+				{
+					GameObject[] deListS = GameObject.FindGameObjectsWithTag ("cloneH");
+					print (GameObject.FindGameObjectsWithTag("cloneH").Length);
+					for (int i = 0; i < GameObject.FindGameObjectsWithTag ("cloneH").Length; i++) {
+						print(deListS[i].transform.position);
+					}
+
+					if (GameObject.FindGameObjectsWithTag("cloneH").Length.Equals(1)) {
+						Debug.Log ("check");
+						hop = false;
+						passedTrack.Clear ();
+						SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;
+						SelectedPiece = null;
+						ChangeState (0);
+						activePlayer = -activePlayer;
+					}
 				}
 			}
 
