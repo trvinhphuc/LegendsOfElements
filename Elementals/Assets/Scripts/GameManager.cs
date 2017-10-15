@@ -45,6 +45,7 @@ public class GameManager : MonoBehaviour
 	// list of around a piece
 	List<Vector2> passedTrack = new List<Vector2> ();
 	public bool hop = false;
+	List<Vector2> moves = new List<Vector2> ();
 
 	void OnGUI ()
 	{
@@ -112,7 +113,7 @@ public class GameManager : MonoBehaviour
 
 	void Update ()
 	{
-		UpdateSelection();
+		UpdateSelection ();
 		/*
 		GameObject[] deboardList = GameObject.FindGameObjectsWithTag ("board");
 
@@ -272,6 +273,20 @@ public class GameManager : MonoBehaviour
 			_PieceToCreate.name = _pieceName + "p2";
 		}
 	}
+	// Tạo các clone để chọn nước đi
+	public void CreateClone (GameObject _SelectedPiece, List<Vector2> _PossibleMoves)
+	{
+		GameObject clone;
+		if (_PossibleMoves != null) {
+			foreach (Vector2 move in _PossibleMoves) {
+				clone = Object.Instantiate (_SelectedPiece, move, Quaternion.identity) as GameObject;
+				clone.tag = "clone";
+				clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
+			}
+		}
+	}
+
+
 	// thay vì chỉ duyệt 1 ô thì duyệt 2 ô liên tiếp nhau, hàm test move sẽ kiểm tra xem là tại vi trí đó có quân nào rồi hay chưa
 	public void PossibleMove (GameObject _SelectedPiece)
 	{
@@ -280,7 +295,7 @@ public class GameManager : MonoBehaviour
 		if (_SelectedPiece != null) {
 			if (hop) {
 				for (int a = 0; a < passedTrack.Count; a++) {
-					print (passedTrack[a]);
+					print (passedTrack [a]);
 				}
 				GetAroundPieces (_SelectedPiece);
 				for (int i = 0; i <= 7; i++) {
@@ -321,11 +336,11 @@ public class GameManager : MonoBehaviour
 	{
 		GameObject[] decloneList = GameObject.FindGameObjectsWithTag ("clone");
 		foreach (GameObject declone1 in decloneList) {
-			Destroy (declone1);
+			DestroyImmediate (declone1);
 		}
 		GameObject[] decloneListS = GameObject.FindGameObjectsWithTag ("cloneH");
 		foreach (GameObject declone2 in decloneListS) {
-			Destroy (declone2);
+			DestroyImmediate (declone2);
 		}
 	}
 
@@ -380,28 +395,21 @@ public class GameManager : MonoBehaviour
 				activePlayer = -activePlayer;
 			} else {
 				hop = true;
+				DecloneMove ();
 				SelectedPiece.transform.position = new Vector2 (_coordToMove.x, _coordToMove.y);		// Move the piece
 				EatPiece (SelectedPiece, activePlayer);
 				passedTrack.Add (_coordPiece);
-				DecloneMove ();
 				PossibleMove (SelectedPiece);
-				{
-					GameObject[] deListS = GameObject.FindGameObjectsWithTag ("cloneH");
-					print (GameObject.FindGameObjectsWithTag("cloneH").Length);
-					for (int i = 0; i < GameObject.FindGameObjectsWithTag ("cloneH").Length; i++) {
-						print(deListS[i].transform.position);
-					}
-
-					if (GameObject.FindGameObjectsWithTag("cloneH").Length.Equals(1)) {
-						Debug.Log ("check");
-						hop = false;
-						passedTrack.Clear ();
-						SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;
-						SelectedPiece = null;
-						ChangeState (0);
-						activePlayer = -activePlayer;
-					}
+				if (GameObject.FindGameObjectsWithTag ("cloneH").Length == 0) {
+					Debug.Log ("check");
+					hop = false;
+					passedTrack.Clear ();
+					SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;
+					SelectedPiece = null;
+					ChangeState (0);
+					activePlayer = -activePlayer;
 				}
+					
 			}
 
 		}
@@ -555,7 +563,7 @@ public class GameManager : MonoBehaviour
 		//Debug.Log (gameState);
 
 		for (int a = 0; a <= 27; a++) {
-			if ((Mathf.Abs (activePiece [a].gameObject.transform.position.x - _coordToMove.x) <= 0.1) && (Mathf.Abs (activePiece [a].gameObject.transform.position.y - _coordToMove.y) <= 0.1)) {
+			if ((Mathf.Abs (activePiece [a].gameObject.transform.position.x - _coordToMove.x) <= 0.01) && (Mathf.Abs (activePiece [a].gameObject.transform.position.y - _coordToMove.y) <= 0.01)) {
 				_movementLegalBool = false;
 				break;
 			}
