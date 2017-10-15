@@ -299,30 +299,36 @@ public class GameManager : MonoBehaviour
 				}
 				GetAroundPieces (_SelectedPiece);
 				for (int i = 0; i <= 7; i++) {
-					if (!TestMovement (_SelectedPiece, around [i])) {
-						if (TestMovement (_SelectedPiece, around [i + 8])) {
-							
-							if (!passedTrack.Contains (around [i + 8])) {
+					if (TestMovement (_SelectedPiece, around [i]) == _SelectedPiece.tag) {
+						if (TestMovement (_SelectedPiece, around [i+8]) == "0" ) {
+							bool check = true;
+							for (int a = 0; a < passedTrack.Count; a++) {
+								if(passedTrack[a] == around[i+8])
+									check = false;
+							}
+							if (check) {
+								Debug.Log (around [i + 8]);
 								clone = Object.Instantiate (_SelectedPiece, around [i + 8], Quaternion.identity) as GameObject;
 								clone.tag = "cloneH";
 								clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
 							}
 						}
+
 					}
 				}
 			} else {
 				GetAroundPieces (_SelectedPiece);
 				for (int i = 0; i <= 7; i++) {
-					if (TestMovement (_SelectedPiece, around [i])) {
-					
+					if (TestMovement (_SelectedPiece, around [i]) == "0") {
 						clone = Object.Instantiate (_SelectedPiece, around [i], Quaternion.identity) as GameObject;
 						clone.tag = "clone";
 						clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
-
-					} else if (TestMovement (_SelectedPiece, around [i + 8])) {
-						clone = Object.Instantiate (_SelectedPiece, around [i + 8], Quaternion.identity) as GameObject;
-						clone.tag = "cloneH";
-						clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
+					} else if (TestMovement (_SelectedPiece, around [i]) == _SelectedPiece.tag) {
+						if (TestMovement (_SelectedPiece, around [i + 8]) == "0") {
+							clone = Object.Instantiate (_SelectedPiece, around [i + 8], Quaternion.identity) as GameObject;
+							clone.tag = "cloneH";
+							clone.GetComponent<Renderer> ().material.color = new Color (1f, 1f, 1f, 0.5f);
+						}
 					}
 
 				}
@@ -547,28 +553,27 @@ public class GameManager : MonoBehaviour
 	// Test if the piece can do the player's movement
 	/* 
 	*/
-	bool TestMovement (GameObject _SelectedPiece, Vector2 _coordToMove)
+	string TestMovement (GameObject _SelectedPiece, Vector2 _coordToMove)
 	{
 		
-		bool _movementLegalBool = true;
-		bool _collisionDetectBool = false;
+		string _movementLegalBool = "0";// 0 is empty, 1 is player1, -1 is player2, 10 is outrange
 		
 		//_collisionDetectBool = true;
 		Vector2 _coordPiece = new Vector2 (_SelectedPiece.transform.position.x, _SelectedPiece.transform.position.y);
 
 
 		if (_coordToMove.magnitude > 4.3) {
-			_movementLegalBool = false;
+			_movementLegalBool = "10";
 		}
 		//Debug.Log (gameState);
 
 		for (int a = 0; a <= 27; a++) {
 			if ((Mathf.Abs (activePiece [a].gameObject.transform.position.x - _coordToMove.x) <= 0.01) && (Mathf.Abs (activePiece [a].gameObject.transform.position.y - _coordToMove.y) <= 0.01)) {
-				_movementLegalBool = false;
+				_movementLegalBool = activePiece[a].tag;
 				break;
 			}
 		}
-		return (_movementLegalBool && !_collisionDetectBool);
+		return (_movementLegalBool);
 
 		//return true;
 	}
