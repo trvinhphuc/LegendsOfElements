@@ -539,6 +539,7 @@ public class GameManager : MonoBehaviour
 	private void Killpiece(GameObject piece)
 	{
 		graveyard.Add (piece);
+		//activePiece.Remove (piece);
 		piece.transform.position = new Vector2 (100, 100);
 	}
 	// Test if the piece can do the player's movement
