@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
 	public int activePlayer = 1;
 	// 1 = player 1, -1 = player 2
 	public bool player1AI = false;
-	public bool player2AI = false;
+	public bool player2AI = true;
 
 
 	public Text winText;
@@ -23,8 +23,9 @@ public class GameManager : MonoBehaviour
 
 	PieceClass piece = new PieceClass ();
 	public List<GameObject> PiecePrefabs;
-	private List<GameObject> activePiece = new List<GameObject> ();
-	
+	public List<GameObject> activePiece = new List<GameObject> ();
+	public List<GameObject> graveyard = new List<GameObject> ();
+
 	private GameObject SelectedPiece;
 	// Selected Piece
 	private float selectionX;
@@ -45,7 +46,7 @@ public class GameManager : MonoBehaviour
 	// list of around a piece
 	List<Vector2> passedTrack = new List<Vector2> ();
 	public bool hop = false;
-	List<Vector2> moves = new List<Vector2> ();
+
 
 	void OnGUI ()
 	{
@@ -54,8 +55,6 @@ public class GameManager : MonoBehaviour
 			_activePlayerColor = "Green";
 		else
 			_activePlayerColor = "Red";
-		
-		
 		
 	}
 	
@@ -182,11 +181,6 @@ public class GameManager : MonoBehaviour
 
 	void DrawBoard ()
 	{
-		
-
-
-
-
 		for (int i = 0; i <= 15; i++) {
 			Vector2 start = Vector2.one * i * 0.35f;
 			Debug.DrawLine (Bottom + start, Left + start);
@@ -480,29 +474,28 @@ public class GameManager : MonoBehaviour
 				for (int j = 0; j <= 7; j++) {
 					if ((Mathf.Abs (around [j].x - activePiece [i].gameObject.transform.position.x) <= 0.1) && (Mathf.Abs (around [j].y - activePiece [i].gameObject.transform.position.y) <= 0.1)) {
 						if ((_SelectedPiece.name == "Darkp2") || (activePiece [i].name == "Darkp1")) {
-							if (activePiece [i].name != "Lightp1")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
-							
+							if (activePiece [i].name != "Lightp1") 
+								Killpiece(activePiece [i]);
 						} else if (_SelectedPiece.name == "Windp2") {
 							if (activePiece [i].name == "Waterp1")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece (activePiece [i]);
 							if (activePiece [i].name == "Firep1")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						} else if (_SelectedPiece.name == "Waterp2") {
 							if (activePiece [i].name == "Earthp1")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Windp1")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						} else if (_SelectedPiece.name == "Earthp2") {
 							if (activePiece [i].name == "Firep1")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Waterp1")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						} else if (_SelectedPiece.name == "Firep2") {
 							if (activePiece [i].name == "Windp1")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Earthp1")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						}
 						
 					}
@@ -515,41 +508,39 @@ public class GameManager : MonoBehaviour
 				for (int j = 0; j <= 7; j++) {
 					if ((Mathf.Abs (around [j].x - activePiece [i].gameObject.transform.position.x) <= 0.1) && (Mathf.Abs (around [j].y - activePiece [i].gameObject.transform.position.y) <= 0.1)) {
 						if ((_SelectedPiece.name == "Darkp1") || (activePiece [i].name == "Darkp2")) {
-							if (activePiece [i].name != "Lightp2")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
-							
+							if (activePiece [i].name != "Lightp2") 
+								Killpiece (activePiece [i]);
 						} else if (_SelectedPiece.name == "Windp1") {
 							if (activePiece [i].name == "Waterp2")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Firep2")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						} else if (_SelectedPiece.name == "Waterp1") {
 							if (activePiece [i].name == "Earthp2")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Windp2")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						} else if (_SelectedPiece.name == "Earthp1") {
 							if (activePiece [i].name == "Firep2")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Waterp2")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						} else if (_SelectedPiece.name == "Firep1") {
 							if (activePiece [i].name == "Windp2")
-								activePiece [i].GetComponent<Renderer> ().enabled = false;
+								Killpiece(activePiece [i]);
 							if (activePiece [i].name == "Earthp2")
-								_SelectedPiece.GetComponent<Renderer> ().enabled = false;
+								Killpiece(_SelectedPiece);
 						}
 					}
 				}
 			}
 		}
-
-			
-		
-		
-
 	}
-	
+	private void Killpiece(GameObject piece)
+	{
+		graveyard.Add (piece);
+		piece.transform.position = new Vector2 (100, 100);
+	}
 	// Test if the piece can do the player's movement
 	/* 
 	*/

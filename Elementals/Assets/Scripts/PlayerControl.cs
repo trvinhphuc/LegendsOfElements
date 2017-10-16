@@ -9,15 +9,15 @@ public class PlayerControl : MonoBehaviour {
 	private int _activePlayer;
 	private bool _player1AI;
 	private bool _player2AI;
-	
+
 	// Use this for initialization
 	void Start () 
 	{
 		PlayerCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>(); // Find the Camera's GameObject from its tag 
 		_GameManager = gameObject.GetComponent<GameManager>();
 		_player1AI = _GameManager.player1AI;
-		_player2AI = _GameManager.player2AI;
-		//Debug.Log("Hit");
+		_player2AI = true;
+		//Debug.Log(_player2AI);
 		
 	}
 	
@@ -25,12 +25,19 @@ public class PlayerControl : MonoBehaviour {
 	void Update () {
 		// Look for Mouse Inputs
 		_activePlayer = _GameManager.activePlayer;
-		if((_activePlayer == 1 && _player1AI == false) || (_activePlayer == -1 && _player2AI == false))
-		{
-			//Debug.Log ("Select");
-			GetMouseInputs();
+		if ((_activePlayer == 1 && _player1AI == false) || (_activePlayer == -1 && _player2AI == false)) {
+			//Debug.Log (_player2AI);
+			GetMouseInputs ();
+		} else {
+			int r;
+			do {
+				r = Random.Range (14, 27);
+			} while(_GameManager.activePiece [r] == null);
+			_GameManager.SelectPiece (_GameManager.activePiece [r]);
+			GameObject[] moves = GameObject.FindGameObjectsWithTag ("clone");
+			int m = Random.Range(0,moves.Length-1);
+			_GameManager.MovePiece (moves [m]);
 		}
-		
 	}
 	
 	// Detect Mouse Inputs
