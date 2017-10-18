@@ -47,6 +47,7 @@ public class GameManager : MonoBehaviour
 	List<Vector2> passedTrack = new List<Vector2> ();
 	public bool hop = false;
 
+	public int isEnd = 0;
 
 	void OnGUI ()
 	{
@@ -113,30 +114,25 @@ public class GameManager : MonoBehaviour
 	void Update ()
 	{
 		UpdateSelection ();
-		/*
-		GameObject[] deboardList = GameObject.FindGameObjectsWithTag ("board");
 
+		//GameObject[] deboardList = GameObject.FindGameObjectsWithTag ("board");
 
-		UpdateSelection();
-		DrawBoard ();
-		int isEnd = CheckEndGame ();
-		print( isEnd);
-		if ( isEnd == 0) {
-			
-		} else if (isEnd != 0) {
-			
+//		isEnd = CheckEndGame ();
+//		print( isEnd);
+//		if ( isEnd == 0) {
+//			
+//		} else if (isEnd != 0) {
+//			
+//
+//
+//			if (isEnd == 1) {
+//				winText.text = "Player 1 Win";
+//			}
+//			if (isEnd == -1) {
+//				winText.text = "Player 2 Win";
+//			}
+//		}
 
-			foreach( GameObject de in deboardList){
-				Destroy (de);
-			}
-			if (isEnd == 1) {
-				winText.text = "Player 1 Win";
-			}
-			if (isEnd == -1) {
-				winText.text = "Player 2 Win";
-			}
-		}
-		*/
 
 	}
 
@@ -144,6 +140,7 @@ public class GameManager : MonoBehaviour
 	{
 		if (!Camera.main)
 			return;
+		
 		/*
 		Vector2 _hitInfo = Camera.main.ScreenPointToRay (Input.mousePosition).origin;
 		//Debug.Log (_hitInfo);
