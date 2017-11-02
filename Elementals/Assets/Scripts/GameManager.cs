@@ -7,9 +7,6 @@ using System.Linq;
 public class GameManager : MonoBehaviour
 {
 	
-
-
-
 	public int activePlayer = 1;
 	// 1 = player 1, -1 = player 2
 	public bool player1AI = false;
