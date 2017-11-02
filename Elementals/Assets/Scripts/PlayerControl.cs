@@ -9,7 +9,8 @@ public class PlayerControl : MonoBehaviour {
 	private int _activePlayer;
 	private bool _player1AI;
 	private bool _player2AI;
-
+	private bool minimax;
+	private int Depth = 3;
 	// Use this for initialization
 	void Start () 
 	{
@@ -17,6 +18,7 @@ public class PlayerControl : MonoBehaviour {
 		_GameManager = gameObject.GetComponent<GameManager>();
 		_player1AI = _GameManager.player1AI;
 		_player2AI = true;
+		minimax =  true;
 		//Debug.Log(_player2AI);
 		
 	}
@@ -29,14 +31,23 @@ public class PlayerControl : MonoBehaviour {
 			//Debug.Log (_player2AI);
 			GetMouseInputs ();
 		} else {
-			int r;
-			do {
-				r = Random.Range (14, 27);
-			} while(_GameManager.activePiece [r] == null);
-			_GameManager.SelectPiece (_GameManager.activePiece [r]);
-			GameObject[] moves = GameObject.FindGameObjectsWithTag ("clone");
-			int m = Random.Range(0,moves.Length-1);
-			_GameManager.MovePiece (moves [m]);
+			if (!minimax) {
+				int r;
+				do {
+					r = Random.Range (14, 27);
+				} while(_GameManager.activePiece [r].transform.position.x > 50);
+				_GameManager.SelectPiece (_GameManager.activePiece [r]);
+				GameObject[] moves = GameObject.FindGameObjectsWithTag ("clone");
+				int m = Random.Range (0, moves.Length - 1);
+				_GameManager.MovePiece (moves [m]);
+			} else {
+				_GameManager.SetState (_GameManager.activePiece);
+				_GameManager.Minimax (_GameManager.State,Depth,_activePlayer);
+				_GameManager.MovePiece (_GameManager.best_move);
+				print (_GameManager.best_move.PieceName);
+				print (_GameManager.best_move.MoveCoord);
+				_activePlayer = -_activePlayer;
+			}
 		}
 	}
 	

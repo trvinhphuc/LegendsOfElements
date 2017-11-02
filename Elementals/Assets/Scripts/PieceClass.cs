@@ -4,11 +4,19 @@ using UnityEngine;
 
 public class PieceClass  {
 
-	string PieceName;
-	float pos_x;
-	float pos_y;
-	int active_player;
+	public string PieceName;
+	public float pos_x;
+	public float pos_y;
+	public int tag_player;
+	public int dead;
 
-
-	
+	public PieceClass SetPiece(GameObject piece){
+		PieceClass state = new PieceClass();
+		state.PieceName = piece.name;
+		state.pos_x = piece.transform.position.x;
+		state.pos_y = piece.transform.position.y;
+		state.tag_player = int.Parse(piece.tag);
+		state.dead = 0;
+		return state;
+	}
 }
