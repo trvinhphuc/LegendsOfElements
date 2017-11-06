@@ -10,7 +10,7 @@ public class PlayerControl : MonoBehaviour {
 	private bool _player1AI;
 	private bool _player2AI;
 	private bool minimax;
-	private int Depth = 3;
+	private int Depth = 1;
 	// Use this for initialization
 	void Start () 
 	{
@@ -18,7 +18,7 @@ public class PlayerControl : MonoBehaviour {
 		_GameManager = gameObject.GetComponent<GameManager>();
 		_player1AI = _GameManager.player1AI;
 		_player2AI = true;
-		minimax =  true;
+		minimax =  false;
 		//Debug.Log(_player2AI);
 		
 	}
@@ -41,7 +41,9 @@ public class PlayerControl : MonoBehaviour {
 				int m = Random.Range (0, moves.Length - 1);
 				_GameManager.MovePiece (moves [m]);
 			} else {
+				//_GameManager.State = null;
 				_GameManager.SetState (_GameManager.activePiece);
+				_GameManager.best_move = null;
 				_GameManager.Minimax (_GameManager.State,Depth,_activePlayer);
 				_GameManager.MovePiece (_GameManager.best_move);
 				print (_GameManager.best_move.PieceName);
