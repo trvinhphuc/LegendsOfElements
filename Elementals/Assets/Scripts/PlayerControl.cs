@@ -18,7 +18,7 @@ public class PlayerControl : MonoBehaviour {
 		_GameManager = gameObject.GetComponent<GameManager>();
 		_player1AI = _GameManager.player1AI;
 		_player2AI = true;
-		minimax =  false;
+		minimax =  true;
 		//Debug.Log(_player2AI);
 		
 	}
@@ -44,8 +44,10 @@ public class PlayerControl : MonoBehaviour {
 				//_GameManager.State = null;
 				_GameManager.SetState (_GameManager.activePiece);
 				_GameManager.best_move = null;
-				_GameManager.Minimax (_GameManager.State,Depth,_activePlayer);
+				//_GameManager.best_score = 0;
+				print (_GameManager.Minimax (_GameManager.State,Depth,_activePlayer));
 				_GameManager.MovePiece (_GameManager.best_move);
+				
 				print (_GameManager.best_move.PieceName);
 				print (_GameManager.best_move.MoveCoord);
 				_activePlayer = -_activePlayer;

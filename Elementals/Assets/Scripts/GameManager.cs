@@ -51,6 +51,7 @@ public class GameManager : MonoBehaviour
 
 	public MoveClass best_move = new MoveClass ();
 
+
 	public bool hop = false;
 
 	public int isEnd = 0;
@@ -280,9 +281,10 @@ public class GameManager : MonoBehaviour
 	//Test
 	private void printState ()
 	{
-		for (int i = 0; i < State.Count; i++) {
-			print (State [i].PieceName);
-		}
+//		for (int i = 0; i < State.Count; i++) {
+//			print (State [i].PieceName);
+//		}
+	
 	}
 	// Tạo các clone để chọn nước đi
 	public void CreateClone (GameObject _SelectedPiece, List<Vector2> _PossibleMoves)
@@ -347,53 +349,98 @@ public class GameManager : MonoBehaviour
 	}
 
 	// use for AI
-	public List<MoveClass> PossibleMove (List<PieceClass> state , PieceClass _SelectedPiece, bool _hop)
+	public List<MoveClass> PossibleMove (List<PieceClass> state , PieceClass _SelectedPiece)
 	{
 		List<MoveClass> Moves = new List<MoveClass> ();
 		if (_SelectedPiece != null) {
-			if (_hop) {
-				List<Vector2> around = GetAroundPieces (_SelectedPiece.pos_x,_SelectedPiece.pos_y);
-				for (int i = 0; i <= 7; i++) {
-					if (UnrealTestMovement(state,_SelectedPiece, around [i]) == _SelectedPiece.tag_player) {
-						if (UnrealTestMovement(state,_SelectedPiece, around [i + 8]) == 0) {
-							bool check = true;
-							for (int a = 0; a < passedTrack.Count; a++) {
-								if (passedTrack [a] == around [i + 8])
-									check = false;
-							}
-							if (check) {
-								
-							}
-						}
-
-					}
-				}
-			} else {
+			
 				List<Vector2> around = GetAroundPieces (_SelectedPiece.pos_x,_SelectedPiece.pos_y);
 				for (int i = 0; i <= 7; i++) {
 					if (UnrealTestMovement (state, _SelectedPiece, around [i]) == 0) {
 						MoveClass m = new MoveClass ();
 						m.PieceName = _SelectedPiece.PieceName;
 						m.MoveCoord = around [i];
+					if (m.PieceName == "3Windp2") {
+						print (m.MoveCoord);
+						Debug.Log (UnrealTestMovement (state, _SelectedPiece, around [5]));
+					}
 						Moves.Add (m);
-						print (1);
+
 					} else if (UnrealTestMovement (state, _SelectedPiece, around [i]) == _SelectedPiece.tag_player) {
 						if (!_SelectedPiece.PieceName.Contains ("Light")) {
 							if (UnrealTestMovement (state, _SelectedPiece, around [i + 8]) == 0) {
 								MoveClass m = new MoveClass ();
+								List<Vector2> pass = new List<Vector2>();
 								m.PieceName = _SelectedPiece.PieceName;
 								m.MoveCoord = around [i + 8];
 								m.hop = true;
 								Moves.Add (m);
-								print (1);
+//								List<PieceClass> state2 = UnrealMovePiece (state, m);
+//								_SelectedPiece.pos_x = m.MoveCoord.x;
+//								_SelectedPiece.pos_y = m.MoveCoord.y;
+//								pass.Add (m.MoveCoord);
+//								List<MoveClass> moves = new List<MoveClass> ();
+//							
+//								moves = FindAllHopMoves (state2, _SelectedPiece,pass);
+//
+//								if (moves.Count != 0) {
+//									for (int a = 0; a < moves.Count; a++) {
+//										MoveClass m2 = new MoveClass ();
+//										m2 = m;
+//										m2.p_next = moves [a];
+//
+//									}
+//								}
+
 							}
 						}
 					}
 
 				}
+
+		}
+
+		return Moves;
+
+	}
+	private List<MoveClass> FindAllHopMoves(List<PieceClass> state,PieceClass _SelectedPiece, List<Vector2> pass  ){
+		List<MoveClass> Moves = new List<MoveClass> ();
+		if (_SelectedPiece != null) {
+			List<Vector2> around = GetAroundPieces (_SelectedPiece.pos_x, _SelectedPiece.pos_y);
+			for (int i = 0; i <= 7; i++) {
+				if (UnrealTestMovement (state, _SelectedPiece, around [i]) == _SelectedPiece.tag_player) {
+					if (UnrealTestMovement (state, _SelectedPiece, around [i + 8]) == 0) {
+						bool check = true;
+						for (int a = 0; a < pass.Count; a++) {
+							if (pass [a] == around [i + 8])
+								check = false;
+						}
+						if (check) {
+							MoveClass m = new MoveClass ();
+							m.PieceName = _SelectedPiece.PieceName;
+							m.MoveCoord = around [i + 8];
+							m.hop = true;
+							Moves.Add (m);
+							state = UnrealMovePiece (state, m);
+							_SelectedPiece.pos_x = m.MoveCoord.x;
+							_SelectedPiece.pos_y = m.MoveCoord.y;
+							pass.Add (m.MoveCoord);
+							List<MoveClass> moves = FindAllHopMoves (state, _SelectedPiece, pass);
+							if (moves.Count != 0) {
+								for (int a = 0; a < moves.Count; a++) {
+									MoveClass m2 = new MoveClass ();
+									m2 = m;
+									m2.p_next = moves [a];
+
+								}
+
+							} else
+								return Moves;
+						}
+
+					}
+				}
 			}
-
-
 		}
 		return Moves;
 	}
@@ -467,7 +514,7 @@ public class GameManager : MonoBehaviour
 				passedTrack.Add (_coordPiece);
 				PossibleMove (SelectedPiece);
 				if (GameObject.FindGameObjectsWithTag ("cloneH").Length == 0) {
-					Debug.Log ("check");
+					
 					hop = false;
 					passedTrack.Clear ();
 					SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;
@@ -491,7 +538,7 @@ public class GameManager : MonoBehaviour
 		if (!move.hop) {
 			activePiece [selected].transform.position = move.MoveCoord;
 			EatPiece (activePiece [selected],-1);
-			activePlayer = -activePlayer;
+
 		} else {
 			activePiece [selected].transform.position = move.MoveCoord;
 			EatPiece (activePiece [selected],-1);
@@ -499,9 +546,9 @@ public class GameManager : MonoBehaviour
 				move = move.p_next;
 				MovePiece (move);
 			}
-			activePlayer = -activePlayer;
-		}
 
+		}
+		activePlayer = -activePlayer;
 			
 	}
 	// Get list pieces around selected piece
@@ -687,8 +734,8 @@ public class GameManager : MonoBehaviour
 				List<PieceClass> state2 = UnrealMovePiece (state,move);
 				int value = Minimax (state2, Depth - 1, 1);
 				//print (value);
-				if (value >= best_score) {
-					print (best_score);
+				if (value > best_score) {
+					//print (best_score);
 					best_score = value;
 					best_move = move;
 					//print (best_move.PieceName);
@@ -705,7 +752,7 @@ public class GameManager : MonoBehaviour
 				}	
 			} 
 		}
-		return 0;
+		return best_score;
 	}
 	int UnrealTestMovement (List<PieceClass> state, PieceClass _SelectedPiece, Vector2 _coordToMove)
 	{
@@ -722,9 +769,11 @@ public class GameManager : MonoBehaviour
 		//Debug.Log (gameState);
 
 		for (int a = 0; a <= 27; a++) {
-			if ((Mathf.Abs (state [a].pos_x - _coordToMove.x) <= 0.01) && (Mathf.Abs (state [a].pos_y - _coordToMove.y) <= 0.01)) {
+			
+			if ((Mathf.Abs (state [a].pos_x - _coordToMove.x) <= 0.1) && (Mathf.Abs (state [a].pos_y - _coordToMove.y) <= 0.1)) {
 				_movementLegalBool = state[a].tag_player;
-
+				if (a == 20)
+					print (state [a].pos_y);
 				break;
 			}
 		}
@@ -745,7 +794,8 @@ public class GameManager : MonoBehaviour
 			a = Enumerable.Range (14, 27).ToArray ();
 		
 		for (int i = a [0]; i <= a [13]; i++) {
-			List<MoveClass> m = PossibleMove (state, state [i], false);
+			
+			List<MoveClass> m = PossibleMove (state, state [i]);
 			possile_moves.AddRange (m);
 		}
 		return possile_moves;
@@ -755,10 +805,15 @@ public class GameManager : MonoBehaviour
 	{
 		int[] a = new int[14];
 		int[] b = new int[14];
-		int AttackPoint = 1 ;
-		int DefendPoint = 1 ;
-		int LightPoint = 1 ;
+		int AttackPoint = 2 ;
+		int DefendPoint = 2 ;
+		int LightPoint = 2 ;
+		int CenterPoint = 1;
 		int ReturnPoint = 0;
+		if ( CheckEndGame () == -1)
+			return 9999;
+		if ( CheckEndGame () == 1)
+			return -9999;
 		if (turn == 1) {
 			a = Enumerable.Range (0, 14).ToArray ();
 			b = Enumerable.Range (14, 27).ToArray ();
@@ -769,12 +824,15 @@ public class GameManager : MonoBehaviour
 		for (int i = a [0]; i <= a [13]; i++) {
 			if(m [i].pos_x < 100)
 				ReturnPoint = ReturnPoint - DefendPoint;
-			
+			int temp3 = (int) (((4.2f - Mathf.Abs (m [a [i]].pos_y))/0.7f)*CenterPoint);
+			int temp4 = (int) (((4.2f - Mathf.Abs (m [a [i]].pos_x))/0.7f)*CenterPoint);
+			ReturnPoint = ReturnPoint + temp3 + temp4;
 		}
 
 		for (int i = b [0]; i <= b [13]; i++) {
-			if(m [i].pos_x < 100)
-				ReturnPoint = ReturnPoint + AttackPoint ; 
+			if(m [i].pos_x < 100) 
+				ReturnPoint = ReturnPoint + AttackPoint ;
+			
 		}
 		int temp = (int) (((4.2f - Mathf.Abs (m [a [1]].pos_y))/0.7f)*LightPoint);
 		ReturnPoint = ReturnPoint - temp;
@@ -782,7 +840,6 @@ public class GameManager : MonoBehaviour
 		int temp2 = (int) (((4.2f - Mathf.Abs (m [b [1]].pos_y))/0.7f)*LightPoint);
 		ReturnPoint = ReturnPoint + temp2;
 
-		Debug.Log (ReturnPoint);
 		return ReturnPoint;
 	}
 	//
