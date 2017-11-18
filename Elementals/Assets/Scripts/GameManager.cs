@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 
+
 public class GameManager : MonoBehaviour
 {
 	
@@ -44,6 +45,8 @@ public class GameManager : MonoBehaviour
 	public Vector2 Left = Vector2.left * 5.25f;
 	public Vector2 Right = Vector2.right * 5.25f;
 	public Vector2 Top = Vector2.up * 5.25f;
+
+	Animator anim = new Animator ();
 	
 
 	// list of around a piece
@@ -71,6 +74,7 @@ public class GameManager : MonoBehaviour
 	{
 		createAllPieces ();
 		DrawBoard ();
+
 		//SetState (activePiece);
 		//printState ();
 	}
@@ -371,6 +375,7 @@ public class GameManager : MonoBehaviour
 								m.MoveCoord = around [i + 8];
 								m.hop = true;
 								Moves.Add (m);
+
 								List<PieceClass> state2 = UnrealMovePiece (state, m);
 								_SelectedPiece.pos_x = m.MoveCoord.x;
 								_SelectedPiece.pos_y = m.MoveCoord.y;
@@ -382,8 +387,11 @@ public class GameManager : MonoBehaviour
 								if (moves.Count != 0) {
 									for (int a = 0; a < moves.Count; a++) {
 										MoveClass m2 = new MoveClass ();
-										m2 = m;
+										m2.PieceName = m.PieceName;
+										m2.MoveCoord = m.MoveCoord;
+										m2.hop = true;
 										m2.p_next = moves [a];
+
 										Moves.Add (m2);
 									}
 								}
@@ -417,15 +425,18 @@ public class GameManager : MonoBehaviour
 							m.MoveCoord = around [i + 8];
 							m.hop = true;
 							Moves.Add (m);
-							state = UnrealMovePiece (state, m);
+
+							List<PieceClass> state2 = UnrealMovePiece (state, m);
 							_SelectedPiece.pos_x = m.MoveCoord.x;
 							_SelectedPiece.pos_y = m.MoveCoord.y;
 							pass.Add (m.MoveCoord);
-							List<MoveClass> moves = FindAllHopMoves (state, _SelectedPiece, pass);
+							List<MoveClass> moves = FindAllHopMoves (state2, _SelectedPiece, pass);
 							if (moves.Count != 0) {
 								for (int a = 0; a < moves.Count; a++) {
 									MoveClass m2 = new MoveClass ();
-									m2 = m;
+									m2.PieceName = m.PieceName;
+									m2.MoveCoord = m.MoveCoord;
+									m2.hop = true;
 									m2.p_next = moves [a];
 									Moves.Add (m2);
 								}
@@ -678,6 +689,7 @@ public class GameManager : MonoBehaviour
 	private void Killpiece (GameObject piece)
 	{
 		graveyard.Add (piece);
+
 		//activePiece.Remove (piece);
 		piece.transform.position = new Vector2 (100, 100);
 	}

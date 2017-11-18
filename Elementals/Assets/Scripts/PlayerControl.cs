@@ -6,6 +6,9 @@ public class PlayerControl : MonoBehaviour {
 	
 	private Camera PlayerCam;			// Camera used by the player
 	private GameManager _GameManager; 	// GameObject responsible for the management of the game
+
+	private float zoom = 5;
+
 	private int _activePlayer;
 	private bool _player1AI;
 	private bool _player2AI;
@@ -19,6 +22,7 @@ public class PlayerControl : MonoBehaviour {
 		_player1AI = _GameManager.player1AI;
 		_player2AI = true;
 		minimax =  true;
+
 		//Debug.Log(_player2AI);
 		
 	}
@@ -58,6 +62,20 @@ public class PlayerControl : MonoBehaviour {
 	// Detect Mouse Inputs
 	void GetMouseInputs()
 	{	
+		if (Input.GetAxis ("Mouse ScrollWheel") > 0) {
+			if (zoom > 2)
+				zoom -= 1;
+			PlayerCam.transform.position.Set(2f,2f,-10f);
+
+		}
+		if (Input.GetAxis ("Mouse ScrollWheel") < 0) {
+			if (zoom < 5)
+				zoom += 1;
+			PlayerCam.transform.position.Set(-2f,-2f,-10f);
+		}
+		PlayerCam.transform.position = new Vector3(-2f,-2f,-10f);
+		print(PlayerCam.transform.position.x);
+		PlayerCam.orthographicSize = zoom;
 		_activePlayer = _GameManager.activePlayer;
 		Ray _ray;
 		RaycastHit _hitInfo;
