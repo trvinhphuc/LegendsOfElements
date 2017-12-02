@@ -13,16 +13,18 @@ public class PlayerControl : MonoBehaviour {
 	private bool _player1AI;
 	private bool _player2AI;
 	private bool minimax;
-	private int Depth = 1;
+	//private int Depth = 1 ;
 	// Use this for initialization
 	void Start () 
 	{
+		
 		PlayerCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>(); // Find the Camera's GameObject from its tag 
 		_GameManager = gameObject.GetComponent<GameManager>();
 		_player1AI = _GameManager.player1AI;
 		_player2AI = true;
 		minimax =  true;
-
+		//_GameManager.SetState (_GameManager.activePiece);
+		//_GameManager.printState ();
 		//Debug.Log(_player2AI);
 		
 	}
@@ -47,13 +49,12 @@ public class PlayerControl : MonoBehaviour {
 			} else {
 				//_GameManager.State = null;
 				_GameManager.SetState (_GameManager.activePiece);
-				_GameManager.best_move = null;
-				//_GameManager.best_score = 0;
-				print (_GameManager.Minimax (_GameManager.State,Depth,_activePlayer));
-				_GameManager.MovePiece (_GameManager.best_move);
-				
-				print (_GameManager.best_move.PieceName);
+				//_GameManager.Minimax (_GameManager.State,_GameManager.Max_Depth,-1);
+				print(_GameManager.Alpha_beta (_GameManager.State,-10000f,10000f,_GameManager.Max_Depth,-1));
+				Debug.Log(_GameManager.best_move.PieceName);
 				print (_GameManager.best_move.MoveCoord);
+				//print (_GameManager.best_move.hop);
+				_GameManager.MovePiece (_GameManager.best_move);
 				_activePlayer = -_activePlayer;
 			}
 		}
@@ -65,17 +66,30 @@ public class PlayerControl : MonoBehaviour {
 		if (Input.GetAxis ("Mouse ScrollWheel") > 0) {
 			if (zoom > 2)
 				zoom -= 1;
-			PlayerCam.transform.position.Set(2f,2f,-10f);
+			
 
 		}
 		if (Input.GetAxis ("Mouse ScrollWheel") < 0) {
 			if (zoom < 5)
 				zoom += 1;
-			PlayerCam.transform.position.Set(-2f,-2f,-10f);
+			
 		}
-		PlayerCam.transform.position = new Vector3(-2f,-2f,-10f);
-		print(PlayerCam.transform.position.x);
+
 		PlayerCam.orthographicSize = zoom;
+
+		if (Input.GetKeyUp(KeyCode.DownArrow)) {
+			PlayerCam.transform.position = new Vector3(PlayerCam.transform.position.x,PlayerCam.transform.position.y -1f,PlayerCam.transform.position.z);
+		}
+		if (Input.GetKeyUp(KeyCode.UpArrow)) {
+			PlayerCam.transform.position = new Vector3(PlayerCam.transform.position.x,PlayerCam.transform.position.y +1f,PlayerCam.transform.position.z);
+		}
+		if (Input.GetKeyUp(KeyCode.RightArrow)) {
+			PlayerCam.transform.position = new Vector3(PlayerCam.transform.position.x + 1f,PlayerCam.transform.position.y,PlayerCam.transform.position.z);
+		}
+		if (Input.GetKeyUp(KeyCode.LeftArrow)) {
+			PlayerCam.transform.position = new Vector3(PlayerCam.transform.position.x - 1f, PlayerCam.transform.position.y,PlayerCam.transform.position.z);
+		}
+
 		_activePlayer = _GameManager.activePlayer;
 		Ray _ray;
 		RaycastHit _hitInfo;
