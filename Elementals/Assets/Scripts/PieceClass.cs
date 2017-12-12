@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PieceClass  {
+public class PieceClass {
 
 	public string PieceName;
 	public float pos_x;
