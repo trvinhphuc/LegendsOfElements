@@ -4,9 +4,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 
+
 public class GameManager : MonoBehaviour
 {
-	
+
 	public int activePlayer = 1;
 	// 1 = player 1, -1 = player 2
 	public bool player1AI = false;
@@ -21,6 +22,8 @@ public class GameManager : MonoBehaviour
 
 	private PieceClass piece = new PieceClass ();
 	public List<PieceClass> State = new List<PieceClass> ();
+	public int[,] matrix = new int[15,15];
+
 	public List<GameObject> PiecePrefabs;
 	public List<GameObject> activePiece = new List<GameObject> ();
 	public List<GameObject> graveyard = new List<GameObject> ();
@@ -32,8 +35,6 @@ public class GameManager : MonoBehaviour
 	private float selectionY;
 
 	public Quaternion rotation = Quaternion.Euler (0, 0, 45);
-	
-	private Camera PlayerCam;
 
 	// (0,-5.25) -> (-5.25,0)
 	// (5.25,0)	-> (0,5.25)
@@ -41,37 +42,62 @@ public class GameManager : MonoBehaviour
 	public Vector2 Left = Vector2.left * 5.25f;
 	public Vector2 Right = Vector2.right * 5.25f;
 	public Vector2 Top = Vector2.up * 5.25f;
-	
+
+
 
 	// list of around a piece
 	List<Vector2> passedTrack = new List<Vector2> ();
 
 	public MoveClass best_move = new MoveClass ();
+	public float startSpeed = 0.0f;
+	public float moveSpeed = 0.1f;
+	public float fragment = 10.0f;
+	SlowMove m;
 
 
 	public bool hop = false;
-
 	public int isEnd = 0;
+	private int Max_Depth = 2;
 
-	public int eatIndex = 0;
+	//Animation variables declaration
+	int[] dead = new int[29];
+
+	public bool isAttacking = false;
+	protected Animation animation;
+	protected Animator animator;
+	Vector3 killedVtor, attackVtor = new Vector3();
+	public float duration = 1.5f;
+	public List<AnimationClass> animList = new List<AnimationClass>();
+	GameObject[] subLocationN = new GameObject[14];
+	public List<GameObject> animLightAtked = new List<GameObject> ();
+	public Vector3 moveWind = new Vector3(0.0f, 0.0f, 0.0f);
+	private float windSpeed = 0.05f;
+	private Vector3 windTermVector;
+	public bool multiAnimPlaying = false;
+
+	private Vector3 cameraLocation = new Vector3();
+	private int cameraSize = 2;
+	private Camera PlayerCam;
 
 	void OnGUI ()
 	{
-
 		string _activePlayerColor;
 		if (activePlayer == 1)
 			_activePlayerColor = "Green";
 		else
 			_activePlayerColor = "Red";
-		
 	}
 	
 	// Initialize the board area
 	void Start ()
 	{
 		createAllPieces ();
-		DrawBoard ();
-		//SetState (activePiece);
+		animator = GetComponentInChildren<Animator>();
+		PlayerCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+		m = gameObject.GetComponent<SlowMove>();
+		//DrawBoard ();
+
+		// (activePiece);
 		//printState ();
 	}
 
@@ -113,7 +139,7 @@ public class GameManager : MonoBehaviour
 		CreatePiece ("3Fire", 2.1f, 2.8f, -1);		//24
 		CreatePiece ("3Water", 1.05f, 2.45f, -1);	//25
 		CreatePiece ("3Earth", -2.1f, 2.8f, -1);		//26
-		CreatePiece ("3Wind", -1.05f, 2.45f, -1);	//27
+		CreatePiece ("3Wind", -1.05f, -1.75f, -1);	//27
 
 		//CreateBoard();
 	
@@ -122,25 +148,12 @@ public class GameManager : MonoBehaviour
 	void Update ()
 	{
 		UpdateSelection ();
+		DrawBoard ();
+		if (isAttacking) StartCoroutine(cameraController ());
 
-
-		//GameObject[] deboardList = GameObject.FindGameObjectsWithTag ("board");
-
-//		isEnd = CheckEndGame ();
-//		print( isEnd);
-//		if ( isEnd == 0) {
-//			
-//		} else if (isEnd != 0) {
-//			
-//
-//
-//			if (isEnd == 1) {
-//				winText.text = "Player 1 Win";
-//			}
-//			if (isEnd == -1) {
-//				winText.text = "Player 2 Win";
-//			}
-//		}
+		if (animator) {
+			
+		}
 
 
 	}
@@ -216,10 +229,10 @@ public class GameManager : MonoBehaviour
 		//Select the right prefab to instantiate
 		if (_playerTag == 1) {
 			if (_pieceName.Contains ("Dark"))
-				_pieceIndex = 1;
+				_pieceIndex = 0;
 			
 			if (_pieceName.Contains ("Light"))
-				_pieceIndex = 0;
+				_pieceIndex = 1;
 
 			if (_pieceName.Contains ("Fire"))
 				_pieceIndex = 3;
@@ -274,17 +287,46 @@ public class GameManager : MonoBehaviour
 	public void SetState (List<GameObject> pieces)
 	{
 		State.Clear();
+		//matrix = new int[15, 15];
+		PieceClass p = new PieceClass ();
 		for (int i = 0; i <= 27; i++) {
 			State.Add (piece.SetPiece (pieces [i]));
+			//int[] a = p.GetMatrix (pieces [i]);
+			int piece_index;
+			if (i < 14)
+				piece_index = i + 1;
+			else
+				piece_index = 13 - i;
+			//matrix [a [0],a [1]] = piece_index;
 		}
 
 	}
-	//Test
-	private void printState ()
+	public int[,] SetMatrix(List<PieceClass> pieces)
 	{
-//		for (int i = 0; i < State.Count; i++) {
-//			print (State [i].PieceName);
-//		}
+		PieceClass p = new PieceClass ();
+		int[,] m = new int[15, 15];
+		for (int i = 0; i <= 27; i++) { 
+			
+	//		int[] a = p.GetMatrix (pieces [i]);
+			int piece_index;
+			if (i < 14)
+				piece_index = i + 1;
+			else
+				piece_index = 13 - i;
+	//		if (!((a [0] <= 0) || (a [0] >= 14) || (a [1] <= 0) || (a [1] >= 14))) 
+	//			m [a [0],a [1]] = piece_index;
+		}
+		return m;
+	}
+
+	//Test
+	public void printState ()
+	{
+		for (int i = 0; i <= 5; i++) {
+			for (int j = 0; j <= 5; j++) {
+				print (matrix[i,j]);
+			}
+		}
 	
 	}
 	// Tạo các clone để chọn nước đi
@@ -353,45 +395,48 @@ public class GameManager : MonoBehaviour
 	public List<MoveClass> PossibleMove (List<PieceClass> state , PieceClass _SelectedPiece)
 	{
 		List<MoveClass> Moves = new List<MoveClass> ();
+		int[,] matrx = new int[15,15];
+		matrx = SetMatrix(state);
+
 		if (_SelectedPiece != null) {
 			
 				List<Vector2> around = GetAroundPieces (_SelectedPiece.pos_x,_SelectedPiece.pos_y);
 				for (int i = 0; i <= 7; i++) {
-					if (UnrealTestMovement (state, _SelectedPiece, around [i]) == 0) {
+				if (UnrealTestMovement (state, _SelectedPiece, around [i]) == 0) {
 						MoveClass m = new MoveClass ();
 						m.PieceName = _SelectedPiece.PieceName;
 						m.MoveCoord = around [i];
-					if (m.PieceName == "3Windp2") {
-						print (m.MoveCoord);
-						Debug.Log (UnrealTestMovement (state, _SelectedPiece, around [5]));
-					}
 						Moves.Add (m);
 
-					} else if (UnrealTestMovement (state, _SelectedPiece, around [i]) == _SelectedPiece.tag_player) {
+				} else if (UnrealTestMovement (state, _SelectedPiece, around [i]) == _SelectedPiece.tag_player) {
 						if (!_SelectedPiece.PieceName.Contains ("Light")) {
-							if (UnrealTestMovement (state, _SelectedPiece, around [i + 8]) == 0) {
+						if (UnrealTestMovement (state, _SelectedPiece, around [i + 8]) == 0) {
 								MoveClass m = new MoveClass ();
 								List<Vector2> pass = new List<Vector2>();
 								m.PieceName = _SelectedPiece.PieceName;
 								m.MoveCoord = around [i + 8];
 								m.hop = true;
 								Moves.Add (m);
-//								List<PieceClass> state2 = UnrealMovePiece (state, m);
-//								_SelectedPiece.pos_x = m.MoveCoord.x;
-//								_SelectedPiece.pos_y = m.MoveCoord.y;
-//								pass.Add (m.MoveCoord);
-//								List<MoveClass> moves = new List<MoveClass> ();
-//							
-//								moves = FindAllHopMoves (state2, _SelectedPiece,pass);
-//
-//								if (moves.Count != 0) {
-//									for (int a = 0; a < moves.Count; a++) {
-//										MoveClass m2 = new MoveClass ();
-//										m2 = m;
-//										m2.p_next = moves [a];
-//
-//									}
-//								}
+
+								List<PieceClass> state2 = UnrealMovePiece (state, m);
+								_SelectedPiece.pos_x = m.MoveCoord.x;
+								_SelectedPiece.pos_y = m.MoveCoord.y;
+								pass.Add (m.MoveCoord);
+								List<MoveClass> moves = new List<MoveClass> ();
+							
+								moves = FindAllHopMoves (state2, _SelectedPiece,pass);
+
+								if (moves.Count != 0) {
+									for (int a = 0; a < moves.Count; a++) {
+										MoveClass m2 = new MoveClass ();
+										m2.PieceName = m.PieceName;
+										m2.MoveCoord = m.MoveCoord;
+										m2.hop = true;
+										m2.p_next = moves [a];
+
+										Moves.Add (m2);
+									}
+								}
 
 							}
 						}
@@ -406,6 +451,8 @@ public class GameManager : MonoBehaviour
 	}
 	private List<MoveClass> FindAllHopMoves(List<PieceClass> state,PieceClass _SelectedPiece, List<Vector2> pass  ){
 		List<MoveClass> Moves = new List<MoveClass> ();
+		int[,] matrx = new int[15,15];
+		matrx = SetMatrix(state);
 		if (_SelectedPiece != null) {
 			List<Vector2> around = GetAroundPieces (_SelectedPiece.pos_x, _SelectedPiece.pos_y);
 			for (int i = 0; i <= 7; i++) {
@@ -422,21 +469,23 @@ public class GameManager : MonoBehaviour
 							m.MoveCoord = around [i + 8];
 							m.hop = true;
 							Moves.Add (m);
-							state = UnrealMovePiece (state, m);
+
+							List<PieceClass> state2 = UnrealMovePiece (state, m);
 							_SelectedPiece.pos_x = m.MoveCoord.x;
 							_SelectedPiece.pos_y = m.MoveCoord.y;
 							pass.Add (m.MoveCoord);
-							List<MoveClass> moves = FindAllHopMoves (state, _SelectedPiece, pass);
+							List<MoveClass> moves = FindAllHopMoves (state2, _SelectedPiece, pass);
 							if (moves.Count != 0) {
 								for (int a = 0; a < moves.Count; a++) {
 									MoveClass m2 = new MoveClass ();
-									m2 = m;
+									m2.PieceName = m.PieceName;
+									m2.MoveCoord = m.MoveCoord;
+									m2.hop = true;
 									m2.p_next = moves [a];
-
+									Moves.Add (m2);
 								}
 
-							} else
-								return Moves;
+							} 
 						}
 
 					}
@@ -489,24 +538,28 @@ public class GameManager : MonoBehaviour
 
 
 	}
-	
+
 	// Move the SelectedPiece to the inputted coords
-	public void MovePiece (GameObject _objMove)
+	public IEnumerator MovePiece (GameObject _objMove)
 	{
 		
 		Vector2 _coordPiece = new Vector2 (SelectedPiece.transform.position.x, SelectedPiece.transform.position.y);
 		Vector2 _coordToMove = new Vector2 (_objMove.transform.position.x, _objMove.transform.position.y);
-		//Debug.Log (_coordPiece);
+		Vector2 move = _coordPiece - _coordToMove;
+
+
 		// Don't move if the user clicked on its own cube or if there is a piece on the cube
 		if ((_coordToMove.x != _coordPiece.x || _coordToMove.y != _coordPiece.y)) {	
 			if (_objMove.tag == "clone") {
-				SelectedPiece.transform.position = new Vector2 (_coordToMove.x, _coordToMove.y);		// Move the piece
-				EatPiece (SelectedPiece, activePlayer);
+
+				m.Move(SelectedPiece,_coordToMove, activePlayer);
+
 				SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;	// Change it's color back
 				SelectedPiece = null;									// Unselect the Piece
 				ChangeState (0);
 				DecloneMove ();
 				activePlayer = -activePlayer;
+				turnUpdate ();
 			} else {
 				hop = true;
 				DecloneMove ();
@@ -525,9 +578,16 @@ public class GameManager : MonoBehaviour
 				}
 					
 			}
-
+			yield return null;
 		}
 	}
+
+	public void turnUpdate() {
+		for (int i = 0; i < 28; i++) {
+			if (dead[i] > 0) dead [i] -= 1;	
+		}
+	}
+
 	public void MovePiece(MoveClass move){
 		int selected = 0;
 		for (int i = 0; i <= 27; i++) {
@@ -544,6 +604,8 @@ public class GameManager : MonoBehaviour
 			activePiece [selected].transform.position = move.MoveCoord;
 			EatPiece (activePiece [selected],-1);
 			if (move.p_next != null) {
+//				Debug.Log (move.p_next.PieceName);
+//				print (move.p_next.MoveCoord);
 				move = move.p_next;
 				MovePiece (move);
 			}
@@ -559,43 +621,44 @@ public class GameManager : MonoBehaviour
 	public List<Vector2> GetAroundPieces (float pos_x,float pos_y)
 	{
 		List<Vector2> around = new List<Vector2> ();
-		
-		Vector2 N = new Vector2 (pos_x, pos_y + 0.7f);
+
 		Vector2 E = new Vector2 (pos_x + 0.7f, pos_y);
-		Vector2 S = new Vector2 (pos_x, pos_y - 0.7f);
-		Vector2 W = new Vector2 (pos_x - 0.7f, pos_y);
-		Vector2 NE = new Vector2 (pos_x + 0.35f, pos_y + 0.35f);
 		Vector2 SE = new Vector2 (pos_x + 0.35f, pos_y - 0.35f);
+		Vector2 S = new Vector2 (pos_x, pos_y - 0.7f);
 		Vector2 SW = new Vector2 (pos_x - 0.35f, pos_y - 0.35f);
+		Vector2 W = new Vector2 (pos_x - 0.7f, pos_y);
 		Vector2 NW = new Vector2 (pos_x - 0.35f, pos_y + 0.35f);
-		
-		Vector2 N2 = new Vector2 (pos_x, pos_y + 1.4f);
+		Vector2 N = new Vector2 (pos_x, pos_y + 0.7f);
+		Vector2 NE = new Vector2 (pos_x + 0.35f, pos_y + 0.35f);
+
 		Vector2 E2 = new Vector2 (pos_x + 1.4f, pos_y);
+		Vector2 SE2 = new Vector2 (pos_x + 0.7f, pos_y - 0.7f);
+		Vector2 N2 = new Vector2 (pos_x, pos_y + 1.4f);
 		Vector2 S2 = new Vector2 (pos_x, pos_y - 1.4f);
 		Vector2 W2 = new Vector2 (pos_x - 1.4f, pos_y);
 		Vector2 NE2 = new Vector2 (pos_x + 0.7f, pos_y + 0.7f);
-		Vector2 SE2 = new Vector2 (pos_x + 0.7f, pos_y - 0.7f);
 		Vector2 SW2 = new Vector2 (pos_x - 0.7f, pos_y - 0.7f);
 		Vector2 NW2 = new Vector2 (pos_x - 0.7f, pos_y + 0.7f);
 		
 		around.Clear ();
+		around.Add (E); //j = 0
+		around.Add (SE); //1
+		around.Add (S); //2
+		around.Add (SW); //3
+		around.Add (W); //4
+		around.Add (NW);
 		around.Add (N);
-		around.Add (E);
-		around.Add (S);
-		around.Add (W);
 		around.Add (NE);
-		around.Add (SE);
-		around.Add (SW);
-		around.Add (NW); ///
+
 		// ô xung quanh thứ 2
-		around.Add (N2);
 		around.Add (E2);
-		around.Add (S2);
-		around.Add (W2);
-		around.Add (NE2);
 		around.Add (SE2);
+		around.Add (S2);
 		around.Add (SW2);
+		around.Add (W2);
 		around.Add (NW2);
+		around.Add (N2);
+		around.Add (NE2);
 
 		return around;
 	}
@@ -604,47 +667,53 @@ public class GameManager : MonoBehaviour
 	{
 		float pos_x = _SelectedPiece.gameObject.transform.position.x;
 		float pos_y = _SelectedPiece.gameObject.transform.position.y;
-		int _eatIndex;
 		List<Vector2> around = GetAroundPieces (pos_x , pos_y);
-		//print (around[1]+"aaa");
 
 		if (_playerTag == -1) {
 			for (int i = 0; i <= 13; i++) {
 				for (int j = 0; j <= 7; j++) {
 					if ((Mathf.Abs (around [j].x - activePiece [i].gameObject.transform.position.x) <= 0.1) && (Mathf.Abs (around [j].y - activePiece [i].gameObject.transform.position.y) <= 0.1)) {
-						if(!_SelectedPiece.name.Contains("Light")){ 
-						if ((_SelectedPiece.name == "Darkp2") || (activePiece [i].name == "Darkp1")) {
-								_eatIndex = 5;
-							if (activePiece [i].name != "Lightp1")
-									Killpiece (activePiece [i], _eatIndex);
-						} else if (_SelectedPiece.name.Contains("Windp2")) {
-								_eatIndex = 4;
-							if (activePiece [i].name.Contains("Waterp1"))
-									Killpiece (activePiece [i], _eatIndex);
-							if (activePiece [i].name.Contains("Firep1"))
-									Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.name.Contains("Waterp2")) {
-								_eatIndex = 3;
-							if (activePiece [i].name.Contains("Earthp1"))
-									Killpiece (activePiece [i], _eatIndex);
-							if (activePiece [i].name.Contains("Windp1"))
-									Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.name.Contains("Earthp2")) {
-								_eatIndex = 2;
-							if (activePiece [i].name.Contains("Firep1"))
-									Killpiece (activePiece [i], _eatIndex);
-							if (activePiece [i].name.Contains("Waterp1"))
-									Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.name.Contains("Firep2")) {
-								_eatIndex = 1;
-							if (activePiece [i].name.Contains("Windp1")) {
-									Killpiece (activePiece [i], _eatIndex);
+
+						if(!_SelectedPiece.name.Contains("Light")){
+
+							int direct = (j + 4) % 8; //Direct for attacked piece
+
+							//Dark p2 Attack
+							if ((_SelectedPiece.name == "Darkp2")) {
+								if (activePiece [i].name != "Lightp1")
+									Killpiece (activePiece [i], _SelectedPiece, 5, j, true,i);
+							
+							//Wind p2 Attack
+							} else if (_SelectedPiece.name.Contains("Windp2")) {
+								if (activePiece [i].name.Contains("Waterp1") || (activePiece [i].name == "Darkp1"))
+									Killpiece (activePiece [i], _SelectedPiece, 4, j, true,i);
+								if (activePiece [i].name.Contains ("Firep1"))
+									Killpiece (_SelectedPiece,activePiece [i], 1, direct, false,19+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
+							
+							//Water p2 Attack
+							} else if (_SelectedPiece.name.Contains("Waterp2")) {
+								if (activePiece [i].name.Contains("Earthp1") || (activePiece [i].name == "Darkp1"))
+									Killpiece (activePiece [i],_SelectedPiece, 3, j, true,i);
+								if (activePiece [i].name.Contains("Windp1"))
+									Killpiece (_SelectedPiece,activePiece [i], 4, direct, false,17+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
+
+							//Earth p2 Attack
+							} else if (_SelectedPiece.name.Contains("Earthp2")) {
+								if (activePiece [i].name.Contains("Firep1") || (activePiece [i].name == "Darkp1"))
+									Killpiece (activePiece [i],_SelectedPiece, 2, j, true,i);
+								if (activePiece [i].name.Contains("Waterp1"))
+									Killpiece (_SelectedPiece,activePiece [i], 3, direct, false,18+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
+
+							//Fire p2 Attack
+							} else if (_SelectedPiece.name.Contains("Firep2")) {
+								if (activePiece [i].name.Contains("Windp1") || (activePiece [i].name == "Darkp1")) {
+									Killpiece (activePiece [i],_SelectedPiece, 1, j, true,i);
+								}
+								if (activePiece [i].name.Contains("Earthp1"))
+									Killpiece (_SelectedPiece,activePiece [i], 2, direct, false,16+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
 							}
-							if (activePiece [i].name.Contains("Earthp1"))
-									Killpiece (_SelectedPiece, _eatIndex);
 						}
-						}
-						
+
 					}
 				}
 
@@ -655,52 +724,86 @@ public class GameManager : MonoBehaviour
 				for (int j = 0; j <= 7; j++) {
 					if ((Mathf.Abs (around [j].x - activePiece [i].gameObject.transform.position.x) <= 0.1) && (Mathf.Abs (around [j].y - activePiece [i].gameObject.transform.position.y) <= 0.1)) {
 						if (!_SelectedPiece.name.Contains ("Light")) { 
-							if ((_SelectedPiece.name == "Darkp1") || (activePiece [i].name == "Darkp2")) {
-								_eatIndex = 5;
+							
+							int direct = (j + 4) % 8; //Direct for attacked piece
+
+							//Dark p1 Attack
+							if ((_SelectedPiece.name == "Darkp1")) {
 								if (activePiece [i].name != "Lightp2")
-									Killpiece (activePiece [i], _eatIndex);
+									Killpiece (activePiece [i],_SelectedPiece, 5, j, true,i);
+							
+							//Wind p1 Attack
 							} else if (_SelectedPiece.name.Contains ("Windp1")) {
-								_eatIndex = 4;
-								if (activePiece [i].name.Contains ("Waterp2"))
-									Killpiece (activePiece [i], _eatIndex);
+								if (activePiece [i].name.Contains ("Waterp2") || (activePiece [i].name == "Darkp2"))
+									Killpiece (activePiece [i],_SelectedPiece, 4, j, true,i);
 								if (activePiece [i].name.Contains ("Firep2"))
-									Killpiece (_SelectedPiece, _eatIndex);
+									Killpiece (_SelectedPiece,activePiece [i], 1, direct, false,5+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
+
+							//Water p1 Attack
 							} else if (_SelectedPiece.name.Contains ("Waterp1")) {
-								_eatIndex = 3;
-								if (activePiece [i].name.Contains ("Earthp2"))
-									Killpiece (activePiece [i], _eatIndex);
+								if (activePiece [i].name.Contains ("Earthp2") || (activePiece [i].name == "Darkp2"))
+									Killpiece (activePiece [i],_SelectedPiece, 3, j, true,i);
 								if (activePiece [i].name.Contains ("Windp2"))
-									Killpiece (_SelectedPiece, _eatIndex);
+									Killpiece (_SelectedPiece,activePiece [i], 4, direct, false,3+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
+
+							//Earth p1 Attack
 							} else if (_SelectedPiece.name.Contains ("Earthp1")) {
-								_eatIndex = 2;
-								if (activePiece [i].name.Contains ("Firep2"))
-									Killpiece (activePiece [i], _eatIndex);
+								if (activePiece [i].name.Contains ("Firep2") || (activePiece [i].name == "Darkp2"))
+									Killpiece (activePiece [i],_SelectedPiece, 2, j, true,i);
 								if (activePiece [i].name.Contains ("Waterp2"))
-									Killpiece (_SelectedPiece, _eatIndex);
+									Killpiece (_SelectedPiece,activePiece [i], 3, direct, false,4+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
+							
+							//Fire p1 Attack
 							} else if (_SelectedPiece.name.Contains ("Firep1")) {
-								_eatIndex = 1;
-								if (activePiece [i].name.Contains ("Windp2"))
-									Killpiece (activePiece [i], _eatIndex);
+								if (activePiece [i].name.Contains ("Windp2") || (activePiece [i].name == "Darkp2"))
+									Killpiece (activePiece [i],_SelectedPiece, 1, j, true,i);
 								if (activePiece [i].name.Contains ("Earthp2"))
-									Killpiece (_SelectedPiece, _eatIndex);
+									Killpiece (_SelectedPiece,activePiece [i], 2, direct, false,2+(int.Parse(_SelectedPiece.name [0].ToString())-1)*4);
 							}
 						}
 					}
 				}
 			}
 		}
+		StartCoroutine (waitDestroy ());
 	}
 
-	private void Killpiece (GameObject piece, int _eatIndex)
-	{
-		eatIndex = _eatIndex;
-		graveyard.Add (piece);
-		//activePiece.Remove (piece);
-		piece.transform.position = new Vector2 (100, 100);
-
+	private IEnumerator waitDestroy() {
+		if (animList.Count () > 2)
+			multiAnimPlaying = true;
+		for(int i = 0 ; i <= 28 ; i++) {
+			if (dead [i] == 3) {
+				activePiece [i].transform.position = new Vector2 (100, 100);
+				yield return new WaitForSeconds (1.0f);
+			}
+		}
+		yield return null;
 	}
-	private void Killpiece (PieceClass piece, int eatIndex)
+
+	private void Killpiece (GameObject killedPiece, GameObject attackPiece,
+		int _eatIndex, int j, bool _isAnimPriorityTag, int pieceIndex)
 	{
+		dead [pieceIndex] = 3;
+		killedVtor =  killedPiece.transform.position;
+		attackVtor = attackPiece.transform.position;
+		killedVtor.z = -1.0f;
+		attackVtor.z = -1.1f;
+		cameraLocation = attackVtor;
+		if (_eatIndex == 4)
+			windVictimCreator (killedPiece);
+
+		//Add animation in animList in order
+		AnimationClass listIndex = new AnimationClass ();
+		listIndex.setInfo (attackVtor, killedVtor, _isAnimPriorityTag, _eatIndex, j, killedPiece.name);
+		animList.Add (listIndex);
+
+		//Destroy by moving piece far away from board
+		graveyard.Add (killedPiece);
+	}
+
+	private void Killpiece (PieceClass piece, int _eatIndex)
+	{
+		//eatIndex = _eatIndex;
 		//graveyard.Add (piece);
 		//activePiece.Remove (piece);
 		piece.pos_x = 100f;
@@ -734,38 +837,43 @@ public class GameManager : MonoBehaviour
 		//return true;
 	}
 	// AI
-	public int Minimax (List<PieceClass> state, int Depth, int turn)
+
+	public float Minimax (List<PieceClass> state, int Depth, int turn)
 	{
-		int best_score = new int();
+		float best_score = new float();
+		if (turn == -1)
+			best_score = -999;
+		if (turn == 1)
+			best_score = 999;
 		List<MoveClass> moves = new List<MoveClass> ();
 		if ((Depth <= 0) || (this.CheckEndGame () != 0))
-			return HeuristicFunc (state,turn);
-
-		if (turn == -1) {
-			moves = UnrealPossibleMove (state, turn);
-			foreach (MoveClass move in moves) {
+			return HeuristicFunc (state, turn);
+		else {
+			if (turn == -1) {
+				moves = UnrealPossibleMove (state, turn);
+				foreach (MoveClass move in moves) {
 //				if (move.PieceName.Contains ("Light"))
 //					Debug.Log (move.MoveCoord);
-				List<PieceClass> state2 = UnrealMovePiece (state,move);
-				int value = Minimax (state2, Depth - 1, 1);
-				//print (value);
-				if (value > best_score) {
-					//print (best_score);
-					best_score = value;
-					best_move = move;
-					//print (best_move.PieceName);
-				}	
-			} 
-		} else if (turn == 1) {
-			moves = UnrealPossibleMove (state, turn);
-			foreach (MoveClass move in moves) {
-				List<PieceClass> state2 = UnrealMovePiece (state,move);
-				int value = Minimax (state2, Depth - 1, -1);
-				if (value < best_score) {
-					best_score = value;
-					//best_move = move;
-				}	
-			} 
+					List<PieceClass> state2 = UnrealMovePiece (state, move);
+					float value = Minimax (state2, Depth - 1, 1);
+					if (value > best_score) {
+						//print (best_score);
+						best_score = value;
+						//if( Depth == Max_Depth)
+							best_move = move;
+					}	
+				} 
+			} else if (turn == 1) {
+				moves = UnrealPossibleMove (state, turn);
+				foreach (MoveClass move in moves) {
+					List<PieceClass> state2 = UnrealMovePiece (state, move);
+					float value = Minimax (state2, Depth - 1, -1);
+					if (value < best_score) {
+						best_score = value;
+						//best_move = move;
+					}	
+				} 
+			}
 		}
 		return best_score;
 	}
@@ -774,24 +882,52 @@ public class GameManager : MonoBehaviour
 
 		int _movementLegalBool = 0;// 0 is empty, 1 is player1, -1 is player2, 10 is outrange
 
+		Vector2 _coordPiece = new Vector2 (_SelectedPiece.pos_x, _SelectedPiece.pos_y);
+		if (_coordToMove.magnitude > 4.3) {
+			_movementLegalBool = 10;
+		}
+//		PieceClass p = new PieceClass();
+//		int [] a = p.GetMatrix (_coordToMove);
+//		if ((a [0] <= 0) || (a [0] >= 14) || (a [1] <= 0) || (a [1] >= 14) ) 
+//			_movementLegalBool = 10;
+//		else {
+//			if(ma[a[0],a[1]] < 0)
+//				_movementLegalBool = -1;
+//			if(ma[a[0],a[1]] > 0)
+//				_movementLegalBool = 1;
+//		}
+		for (int a = 0; a <= 27; a++) {
+					
+					if ((Mathf.Abs (state [a].pos_x - _coordToMove.x) <= 0.1) && (Mathf.Abs (state [a].pos_y - _coordToMove.y) <= 0.1)) {
+						_movementLegalBool = state[a].tag_player;
+						break;
+					}
+				}
+
+		return (_movementLegalBool);
+
+		//return true;
+	}
+	int UnrealTestMovement (int[,] ma, PieceClass _SelectedPiece, Vector2 _coordToMove)
+	{
+
+		int _movementLegalBool = 0;// 0 is empty, 1 is player1, -1 is player2, 10 is outrange
+//		int[,] ma = new int[15, 15];
+//		ma = SetMatrix(state);
+		PieceClass p = new PieceClass();
+//		int [] a = p.GetMatrix (_coordToMove);
 		//_collisionDetectBool = true;
 		Vector2 _coordPiece = new Vector2 (_SelectedPiece.pos_x, _SelectedPiece.pos_y);
 
 
-		if (_coordToMove.magnitude > 4.3) {
-			_movementLegalBool = 10;
-		}
-		//Debug.Log (gameState);
-
-		for (int a = 0; a <= 27; a++) {
-			
-			if ((Mathf.Abs (state [a].pos_x - _coordToMove.x) <= 0.1) && (Mathf.Abs (state [a].pos_y - _coordToMove.y) <= 0.1)) {
-				_movementLegalBool = state[a].tag_player;
-				if (a == 20)
-					print (state [a].pos_y);
-				break;
-			}
-		}
+//		if ((a [0] < 0) || (a [0] > 14) || (a [1] < 0) || (a [1] > 14) ||((a[0]==0)&&(a[1]==0)||(a[0]==14)&&(a[1]==14))) 
+//			_movementLegalBool = 10;
+//		else {
+//			if(ma[a[0],a[1]] < 0)
+//				_movementLegalBool = -1;
+//			if(ma[a[0],a[1]] > 0)
+//				_movementLegalBool = 1;
+//		}
 
 		return (_movementLegalBool);
 
@@ -816,44 +952,53 @@ public class GameManager : MonoBehaviour
 		return possile_moves;
 	}
 	//
-	private int HeuristicFunc (List<PieceClass> m,int turn)
+	private float HeuristicFunc (List<PieceClass> m,int turn)
 	{
 		int[] a = new int[14];
 		int[] b = new int[14];
-		int AttackPoint = 2 ;
-		int DefendPoint = 2 ;
-		int LightPoint = 2 ;
-		int CenterPoint = 1;
-		int ReturnPoint = 0;
+		float AttackPoint = 2 ;
+		float DefendPoint = 2 ;
+		float LightPoint = 10 ;
+		float CenterPoint = 1;
+		float ReturnPoint = 0;
 		if ( CheckEndGame () == -1)
 			return 9999;
 		if ( CheckEndGame () == 1)
 			return -9999;
-		if (turn == 1) {
-			a = Enumerable.Range (0, 14).ToArray ();
-			b = Enumerable.Range (14, 27).ToArray ();
-		} else if (turn == -1) {
-			a = Enumerable.Range (14, 27).ToArray ();
-			b = Enumerable.Range (0, 14).ToArray ();
-		}
+//		if (turn == 1) {
+//			a = Enumerable.Range (0, 14).ToArray ();
+//			b = Enumerable.Range (14, 28).ToArray ();
+//		} else if (turn == -1) {
+//			a = Enumerable.Range (14, 28).ToArray ();
+//			b = Enumerable.Range (0, 14).ToArray ();
+//		}
+		a = Enumerable.Range (14, 28).ToArray ();
+		b = Enumerable.Range (0, 14).ToArray ();
 		for (int i = a [0]; i <= a [13]; i++) {
-			if(m [i].pos_x < 100)
+			if (m [i].pos_x > 99)
 				ReturnPoint = ReturnPoint - DefendPoint;
-			int temp3 = (int) (((4.2f - Mathf.Abs (m [a [i]].pos_y))/0.7f)*CenterPoint);
-			int temp4 = (int) (((4.2f - Mathf.Abs (m [a [i]].pos_x))/0.7f)*CenterPoint);
-			ReturnPoint = ReturnPoint + temp3 + temp4;
+			else {
+				float temp3 = (((4.2f - Mathf.Abs (m [i].pos_y)) / 0.35f) * CenterPoint);
+				float temp4 = (((4.2f - Mathf.Abs (m [i].pos_x)) / 0.35f) * CenterPoint);
+				ReturnPoint = ReturnPoint + temp3 + temp4;
+		
+			}
 		}
 
 		for (int i = b [0]; i <= b [13]; i++) {
-			if(m [i].pos_x < 100) 
-				ReturnPoint = ReturnPoint + AttackPoint ;
-			
+			if (m [i].pos_x > 99)
+				ReturnPoint = ReturnPoint + AttackPoint;
+			else {
+				float temp3 = (((4.2f - Mathf.Abs (m [i].pos_y)) / 0.35f) * CenterPoint);
+				float temp4 = (((4.2f - Mathf.Abs (m [i].pos_x)) / 0.35f) * CenterPoint);
+				ReturnPoint = ReturnPoint - temp3 - temp4;
+			}
 		}
-		int temp = (int) (((4.2f - Mathf.Abs (m [a [1]].pos_y))/0.7f)*LightPoint);
-		ReturnPoint = ReturnPoint - temp;
+		float temp =  (((4.2f - Mathf.Abs (m [a [1]].pos_y))/0.35f)*LightPoint);
+		ReturnPoint = ReturnPoint + temp;
 
-		int temp2 = (int) (((4.2f - Mathf.Abs (m [b [1]].pos_y))/0.7f)*LightPoint);
-		ReturnPoint = ReturnPoint + temp2;
+		float temp2 = (((4.2f - Mathf.Abs (m [b [1]].pos_y))/0.35f)*LightPoint);
+		ReturnPoint = ReturnPoint - temp2;
 
 		return ReturnPoint;
 	}
@@ -872,26 +1017,20 @@ public class GameManager : MonoBehaviour
 				selected_p.pos_x = move.MoveCoord.x; // Move the piece
 				selected_p.pos_y = move.MoveCoord.y;
 				state = UnrealEatPiece ( state , selected_p);
-				ChangeState (0);
+				//ChangeState (0);
 
-//			} else {
-//				hop = true;
-//				DecloneMove ();
-//				selected_p.pos_x = move.MoveCoord.x; // Move the piece
-//				selected_p.pos_y = move.MoveCoord.y;
-//				state = UnrealEatPiece ( state , selected_p);
-//				passedTrack.Add(move.MoveCoord);
-//				//PossibleMove(;
-//				if (GameObject.FindGameObjectsWithTag ("cloneH").Length == 0) {
-//					//Debug.Log ("check");
-//					hop = false;
-//					passedTrack.Clear ();
-//					SelectedPiece.GetComponent<Renderer> ().material.color = Color.white;
-//					SelectedPiece = null;
-//					ChangeState (0);
-//				}
-
+		} else {
+			selected_p.pos_x = move.MoveCoord.x; // Move the piece
+			selected_p.pos_y = move.MoveCoord.y;
+			state = UnrealEatPiece ( state , selected_p);
+			if (move.p_next != null) {
+				//Debug.Log (move.p_next.PieceName);
+				//print (move.p_next.MoveCoord);
+				move = move.p_next;
+				UnrealMovePiece (state,move);
 			}
+
+		}
 			
 		return state;
 	}
@@ -904,38 +1043,39 @@ public class GameManager : MonoBehaviour
 		if (_SelectedPiece.tag_player == -1) {
 			for (int i = 0; i <= 13; i++) {
 				for (int j = 0; j <= 7; j++) {
-					if ((Mathf.Abs (around [j].x - state[i].pos_x) <= 0.1) && (Mathf.Abs (around [j].y - state[i].pos_y) <= 0.1)) {
-						if ((_SelectedPiece.PieceName == "Darkp2") || (state [i].PieceName == "Darkp1")) {
-							_eatIndex = 5;
-							if (state [i].PieceName != "Lightp1")
-								Killpiece (state [i], _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Windp2")) {
-							_eatIndex = 4;
-							if (state [i].PieceName.Contains("Waterp1"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Firep1")) {
-								Killpiece (_SelectedPiece, _eatIndex);
+					if ((Mathf.Abs (around [j].x - state [i].pos_x) <= 0.1) && (Mathf.Abs (around [j].y - state [i].pos_y) <= 0.1)) {
+						if (!_SelectedPiece.PieceName.Contains ("Light")) { 
+							if ((_SelectedPiece.PieceName == "Darkp2") || (state [i].PieceName == "Darkp1")) {
+								
+								if (state [i].PieceName != "Lightp1")
+									Killpiece (state [i], 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Windp2")) {
+								
+								if (state [i].PieceName.Contains ("Waterp1"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Firep1")) {
+									Killpiece (_SelectedPiece, 0);
+								}
+							} else if (_SelectedPiece.PieceName.Contains ("Waterp2")) {
+								
+								if (state [i].PieceName.Contains ("Earthp1"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Windp1"))
+									Killpiece (_SelectedPiece, 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Earthp2")) {
+								
+								if (state [i].PieceName.Contains ("Firep1"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Waterp1"))
+									Killpiece (_SelectedPiece, 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Firep2")) {
+								if (state [i].PieceName.Contains ("Windp1"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Earthp1"))
+									Killpiece (_SelectedPiece, 0);
 							}
-						} else if (_SelectedPiece.PieceName.Contains("Waterp2")) {
-							_eatIndex = 3;
-							if (state [i].PieceName.Contains("Earthp1"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Windp1"))
-								Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Earthp2")) {
-							_eatIndex = 2;
-							if (state [i].PieceName.Contains("Firep1"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Waterp1"))
-								Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Firep2")) {
-							_eatIndex = 1;
-							if (state [i].PieceName.Contains("Windp1"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Earthp1"))
-								Killpiece (_SelectedPiece, _eatIndex);
-						}
 
+						}
 					}
 				}
 
@@ -946,34 +1086,36 @@ public class GameManager : MonoBehaviour
 			for (int i = 14; i <= 27; i++) {
 				for (int j = 0; j <= 7; j++) {
 					if ((Mathf.Abs (around [j].x - state [i].pos_x) <= 0.1) && (Mathf.Abs (around [j].y - state [i].pos_y) <= 0.1)) {
-						if ((_SelectedPiece.PieceName == "Darkp1") || (state [i].PieceName == "Darkp2")) {
-							_eatIndex = 5;
-							if (state [i].PieceName != "Lightp2")
-								Killpiece (state [i], _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Windp1")) {
-							_eatIndex = 4;
-							if (state [i].PieceName.Contains("Waterp2"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Firep2"))
-								Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Waterp1")) {
-							_eatIndex = 3;
-							if (state [i].PieceName.Contains("Earthp2"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Windp2"))
-								Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Earthp1")) {
-							_eatIndex = 2;
-							if (state [i].PieceName.Contains("Firep2"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Waterp2"))
-								Killpiece (_SelectedPiece, _eatIndex);
-						} else if (_SelectedPiece.PieceName.Contains("Firep1")) {
-							_eatIndex = 1;
-							if (state [i].PieceName.Contains("Windp2"))
-								Killpiece (state [i], _eatIndex);
-							if (state [i].PieceName.Contains("Earthp2"))
-								Killpiece (_SelectedPiece, _eatIndex);
+						if (!_SelectedPiece.PieceName.Contains ("Light")) {
+							if ((_SelectedPiece.PieceName == "Darkp1") || (state [i].PieceName == "Darkp2")) {
+								
+								if (state [i].PieceName != "Lightp2")
+									Killpiece (state [i], 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Windp1")) {
+								
+								if (state [i].PieceName.Contains ("Waterp2"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Firep2"))
+									Killpiece (_SelectedPiece, 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Waterp1")) {
+								
+								if (state [i].PieceName.Contains ("Earthp2"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Windp2"))
+									Killpiece (_SelectedPiece, 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Earthp1")) {
+
+								if (state [i].PieceName.Contains ("Firep2"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Waterp2"))
+									Killpiece (_SelectedPiece, 0);
+							} else if (_SelectedPiece.PieceName.Contains ("Firep1")) {
+
+								if (state [i].PieceName.Contains ("Windp2"))
+									Killpiece (state [i], 0);
+								if (state [i].PieceName.Contains ("Earthp2"))
+									Killpiece (_SelectedPiece, 0);
+							}
 						}
 					}
 				}
@@ -990,25 +1132,311 @@ public class GameManager : MonoBehaviour
 
 	public int CheckEndGame ()
 	{
-		
-		if (activePiece [1].gameObject.transform.position.x == 0f && activePiece [1].gameObject.transform.position.y == 0f) {
-			
+
+		if (Mathf.Abs(activePiece [1].gameObject.transform.position.x) < 0.01f && Mathf.Abs(activePiece [1].gameObject.transform.position.y) < 0.01f) {
+
 			return 1;
-		} else if (activePiece [15].gameObject.transform.position.x == 0f && activePiece [15].gameObject.transform.position.y == 0f) {
-			
+		} else if (Mathf.Abs(activePiece [15].gameObject.transform.position.x) < 0.01f && Mathf.Abs(activePiece [15].gameObject.transform.position.y) < 0.01f) {
+
 			return -1;
 		}
 
 		return 0;
 	}
 
+	public int CheckEndGame (List<PieceClass> state)
+	{
+
+		if (Mathf.Abs(state[1].pos_x) < 0.01f && Mathf.Abs(state[1].pos_y) < 0.01f) {
+
+			return 1;
+		} else if (Mathf.Abs(state[15].pos_x) < 0.01f && Mathf.Abs(state[15].pos_y) < 0.01f) {
+
+			return -1;
+		}
+
+		return 0;
+	}
+
+	#region animation
+	//Animation movement process
+	public void AnimLocate (AnimationClass animIndex) {
+		
+		GameObject animLocation, subLocation, subLocation2;
+		switch (animIndex.eatAnim) {
+		case 1: //Fire Animation
+			animLocation = GameObject.Find ("fire_atk");
+			subLocation = GameObject.Find ("fire_atked");
+			animLocation.transform.position = animIndex.atkLocation;
+			subLocation.transform.position = animIndex.killLocation;
+			redirectVtorAnim (animLocation, subLocation, animIndex.eatAnim, animIndex.angleAnim); //redirect fire
+			break;
+		case 2: //Earth Animation
+			subLocation = GameObject.Find ("earth_atked");
+			subLocation.transform.position = animIndex.killLocation;
+			;
+			break;
+		case 3: //Water Animation
+			animLocation = GameObject.Find ("water_atk");
+			subLocation = GameObject.Find ("water_atked");
+			animLocation.transform.position = animIndex.atkLocation;
+			subLocation.transform.position = animIndex.killLocation;
+			;
+			redirectVtorAnim (animLocation, subLocation, animIndex.eatAnim, animIndex.angleAnim); //redirect water
+			break;
+		case 4: //Wind Animation
+			animLocation = GameObject.Find ("wind_atk");
+			subLocation = GameObject.Find ("wind_atked");
+			animLocation.transform.position = animIndex.atkLocation;
+			subLocation.transform.position = animIndex.killLocation;
+
+			windAttack (animIndex.blowAngleRate(), subLocation);
+			redirectVtorAnim (animLocation, windTermVector, animIndex.eatAnim, animIndex.angleAnim); //redirect wind
+			break;
+		case 5: //Dark Animation
+			animLocation = GameObject.Find ("dark_atk");
+			subLocation = GameObject.Find ("dark_atked_1");
+			subLocation2 = GameObject.Find ("dark_atked_2");
+			animLocation.transform.position = animIndex.atkLocation;
+			subLocation.transform.position = animIndex.killLocation;
+			subLocation2.transform.position = animIndex.killLocation;
+			redirectVtorAnim (animLocation, subLocation, animIndex.eatAnim, animIndex.angleAnim);
+			break;
+		case 6: //Light Animation
+			animLocation = GameObject.Find ("light_atk");
+			animLocation.transform.position = animIndex.atkLocation;
+
+			//All enemy's pieces vanished
+			int range = 0;
+			if (isEnd == 1)
+				range = 14;
+			for (int i = 0; i < 14; i++) {
+				string nameLightanim = "light_atked (" + i + ")";
+				subLocationN [i] = GameObject.Find (nameLightanim);
+				subLocationN [i].transform.position = new Vector3 (
+					activePiece [i + range].transform.position.x,
+					activePiece [i + range].transform.position.y,
+					-0.5f);
+				StartCoroutine(eventProcess(activePiece [i + range]));
+			}
+			break;
+		}
+	}
+
+	//Animation process in Unity
+	public IEnumerator AnimProcess(AnimationClass animIndex) {
+		if (multiAnimPlaying) {
+			if (isEnd == 0) {
+				//Set eatIndex in Unity
+				animator.SetInteger ("eatIndex", animIndex.eatAnim);
+				if (animIndex.eatAnim != 0)
+					isAttacking = true;
+				yield return new WaitForSeconds (duration);
+				isAttacking = false;
+				Destroy (GameObject.Find ("wind_atked"));
+				animIndex.eatAnim = 0;
+				animator.SetInteger ("eatIndex", animIndex.eatAnim);
+			} else {
+				isAttacking = false;
+				animator.SetInteger ("eatIndex", animIndex.eatAnim);
+				yield return new WaitForSeconds (10.0f);
+			}
+		} else
+			multiAnimPlaying = false;
+//		if (isEnd == 0 && !multiAnimPlaying) {
+//			//Set eatIndex in Unity
+//			animator.SetInteger ("eatIndex", animIndex.eatAnim);
+//			multiAnimPlaying = true;
+//			if (animIndex.eatAnim != 0)
+//				isAttacking = true;
+//			//Set after animation finished playing
+//			yield return new WaitForSeconds (duration);
+//			isAttacking = false;
+//			Destroy(GameObject.Find("wind_atked"));
+//			animIndex.eatAnim = 0;
+//			animator.SetInteger ("eatIndex", animIndex.eatAnim);
+//			multiAnimPlaying = false;
+//		}
+//
+//		else if (isEnd != 0) {
+//			isAttacking = false;
+//			animator.SetInteger ("eatIndex", animIndex.eatAnim);
+//			yield return new WaitForSeconds (10.0f);
+//		}
+	}
+
+	void multiAnimation(AnimationClass animIndex) {
+		
+	}
+
+	//Get midpoint from 2 objects
+	public Vector3 getMidPts(Vector3 a, Vector3 b, int index) {
+		float rate = 1;
+		if (index == 1 || index == 4)
+			rate = 1.5f;
+		Vector3 c = new Vector3 ();
+		c.x = ((2.0f - rate) * a.x + rate * b.x) / 2;
+		c.y = ((2.0f - rate) * a.y + rate * b.y) / 2;
+		c.z = a.z;
+		return c;
+	}
+
+	//Calculate rotating angle of animation
+	public float getAngle(Vector3 x, bool isWind) {
+		float angle = Vector3.Angle (x, Vector3.right);
+		if (isWind)
+			angle += 120.0f;
+		return angle;
+	}
+
+	//Get the 3rd point in triangle with attack point and killed point
+	public void fixWaterAnim(GameObject a, GameObject b, int angleIndex) {
+		float eX, eY, eZ;
+		eX = 0.35f;
+		eY = 0.35f * Mathf.Sqrt (2.0f) / 2 + 0.35f * 2 - 0.1f;
+		eZ = 0.5f;
+
+		//Rotate
+		a.transform.rotation = Quaternion.Euler(0, 0, 45 * -angleIndex);
+
+		//Transform + Scale
+		switch (angleIndex) {
+		case 0:
+			a.transform.position = new Vector3 (
+				a.transform.position.x + eX,
+				a.transform.position.y + eY,
+				eZ);
+			break;
+		case 1:
+			a.transform.position = new Vector3 (
+				a.transform.position.x + 2 * eX,
+				a.transform.position.y + eX,
+				eZ);
+			break;
+		case 2:
+			a.transform.position = new Vector3 (
+				a.transform.position.x + eY,
+				a.transform.position.y - eX,
+				eZ);
+			break;
+		case 3:
+			a.transform.localScale = new Vector3 (0.9f, -0.9f, 1.0f);
+			a.transform.position = new Vector3 (
+				a.transform.position.x - 2 * eX,
+				a.transform.position.y + eX,
+				eZ);
+			break;
+		case 4:
+			a.transform.localScale = new Vector3 (0.9f, -0.9f, 1.0f);
+			a.transform.position = new Vector3 (
+				a.transform.position.x - eX,
+				a.transform.position.y + eY,
+				eZ);
+			break;
+		case 5:
+			a.transform.localScale = new Vector3 (0.9f, -0.9f, 1.0f);
+			a.transform.position = new Vector3 (
+				a.transform.position.x + eX,
+				a.transform.position.y + 2 * eX,
+				eZ);
+			break;
+		case 6:
+			a.transform.position = new Vector3 (
+				a.transform.position.x - eY,
+				a.transform.position.y + eX,
+				eZ);
+			break;
+		case 7:
+			a.transform.position = new Vector3 (
+				a.transform.position.x - eX,
+				a.transform.position.y + 2 * eX,
+				eZ);
+			break;
+		}
+	}
+
+	//Rotate animation
+	public void redirectVtorAnim(GameObject rect, GameObject todirect, int _eatIndex, int _angleIndex) {
+		switch (_eatIndex) {
+		case 1:
+			rect.transform.position = getMidPts (rect.transform.position, todirect.transform.position, _eatIndex);
+			rect.transform.rotation = Quaternion.Euler (0, 0, 45 * -_angleIndex);
+			break;
+		case 3: 
+			fixWaterAnim (rect, todirect, _angleIndex);
+			break;
+		case 4:
+			rect.transform.position = getMidPts (rect.transform.position, todirect.transform.position, _eatIndex);
+			rect.transform.rotation = Quaternion.Euler (0, 0, 45 * -_angleIndex + 150);
+			break;
+		case 5:
+			//Relocate dark's eyes
+			rect.transform.position = new Vector3 (rect.transform.position.x,
+				rect.transform.position.y - 0.05f, rect.transform.position.z);
+
+			//Relocate thunder
+			todirect.transform.position = new Vector3 (todirect.transform.position.x + 0.1f,
+				todirect.transform.position.y + 1.5f,
+				todirect.transform.position.z);
+			break;
+		}
+	}
+
+	//Poly function
+	public void redirectVtorAnim(GameObject rect, Vector3 todirect, int _eatIndex, int _angleIndex) {
+		switch (_eatIndex) {
+		case 4:
+			rect.transform.position = getMidPts (rect.transform.position, todirect, _eatIndex);
+			rect.transform.rotation = Quaternion.Euler (0, 0, 45 * -_angleIndex + 150);
+			break;
+		}
+	}
+
+	//Wind animation calculation
+	void windAttack(Vector2 blowRate, GameObject windVictim) {
+		if (windVictim.transform.position.magnitude < 50.0f) {
+			moveWind.x += blowRate.x * windSpeed;
+			moveWind.y += blowRate.y * windSpeed;
+			windVictim.transform.position = new Vector3 (moveWind.x, moveWind.y, moveWind.z);
+		} else
+			moveWind = new Vector3 (0.0f, 0.0f, 0.0f);
+	}
+
+	//Animation events
+	public IEnumerator eventProcess(GameObject a) {
+		yield return new WaitForSeconds (1.0f);
+		a.SetActive (false);
+	}
+
+	//Create wind clone
+	void windVictimCreator(GameObject victimName) {
+		GameObject victim = Object.Instantiate (victimName, victimName.transform.position, Quaternion.identity) as GameObject;
+		if (!isAttacking) windTermVector = victimName.transform.position;
+		victim.name = "wind_atked";
+		moveWind = victim.transform.position;
+	}
+
+
+
+	#endregion
+
+	#region Camera controller
+	IEnumerator cameraController() {
+		if (isEnd == 0) {
+			PlayerCam.transform.position = new Vector3 (
+				cameraLocation.x, cameraLocation.y, -10.0f);
+			PlayerCam.orthographicSize = cameraSize;
+			yield return new WaitForSeconds (3.0f);
+			PlayerCam.transform.position = new Vector3 (0.0f, 0.0f, -10.0f);
+			PlayerCam.orthographicSize = 5;
+		}
+	}
+
+	#endregion
+
 	public void EndGame ()
 	{
 		Application.Quit ();
 	}
 	
-
-	public void Animation(GameObject _SelectedPiece, GameObject piece) {
-
-	}
 }
